@@ -1,0 +1,5 @@
+{
+  "name": "dummy",
+  "command": "node processor.js",
+  "consumes" : [{"metric": "dummy", "category": "dummy"}]
+}
