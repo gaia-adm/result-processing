@@ -7,36 +7,51 @@
 
 var log4js = require('log4js');
 var processors = require('./processors');
+var notification = require('./notification');
+var when = require('when');
+var Promise = when.promise;
 
 var logger = log4js.getLogger('manager.js');
 
 /**
  * Returns comma separated names of processors
- * @param processors array of processor descriptors
+ * @param processorDescs array of processor descriptors
  * @returns {string}
  */
-function getProcessorNames(processors) {
+function getProcessorNames(processorDescs) {
     var names = [];
-    processors.forEach(function(processor) {
+    processorDescs.forEach(function(processor) {
         names.push(processor.name);
     });
     return names.toString();
 }
 
-function startServer(processorsPath, callback) {
+function msgConsumer(msg, ackControl) {
+    logger.info(" [x] Received '%s'", msg.content.toString());
+    ackControl.ack();
+}
+
+function startServer(processorsPath) {
     // discover result processors
-    return processors.init(processorsPath, function(err, processorDescs) {
-        if (err) {
-            callback(err);
-        } else {
-            // we got array of discovered processors
-            if (processorDescs.length > 0) {
-                logger.info('Found the following result processors: ' + getProcessorNames(processorDescs));
-                // TODO: connect to AMQ based on processor descriptor listener config
+    return new Promise(function(fulfill, reject) {
+        // TODO: convert processors.init to Promises
+        processors.init(processorsPath, function(err, processorDescs) {
+            if (err) {
+                reject(err);
             } else {
-                logger.error('Found no result processors');
+                // we got array of discovered processors
+                if (processorDescs.length > 0) {
+                    logger.info('Found the following result processors: ' + getProcessorNames(processorDescs));
+                    notification.initAmq(processorDescs, msgConsumer).done(function onOk() {
+                        fulfill();
+                    }, function onError(err) {
+                        reject(err);
+                    });
+                } else {
+                    reject(new Error('Found no result processors'));
+                }
             }
-        }
+        });
     });
 }
 

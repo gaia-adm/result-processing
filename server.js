@@ -28,8 +28,8 @@ function exitOnSignal(signal) {
 
 var processorsPath = process.env.PROCESSORS_PATH || path.join(__dirname, 'processors');
 
-manager.startServer(processorsPath, function(err) {
-    if (err) {
-        logger.error('Server failed to start due to error', err);
-    }
+manager.startServer(processorsPath).done(function onOk() {
+    logger.info(' [*] Waiting for messages. To exit press CTRL+C');
+}, function onError(err) {
+    logger.error('Server failed to start due to error', err);
 });
