@@ -10,8 +10,13 @@ var path = require('path');
 var async = require("async");
 var childProcess = require('child_process');
 var VError = require('verror');
+var makeSource  = require("stream-json");
+var StreamArray = require("stream-json/utils/StreamArray");
 
 var logger = log4js.getLogger('processors.js');
+
+// map of 'metric/category' key to processor descriptor
+var processorsMap = {};
 
 /**
  * Verifies processor at given path with given descriptor. Performs verification of the descriptor and test execution of
@@ -81,6 +86,7 @@ function discoverProcessor(processorDescs, processorPath, callback) {
                     if (err) {
                         logger.error('Verification of processor ' + desc.name + ' failed with error ', err);
                     } else {
+                        desc.logger = log4js.getLogger('processor:' + desc.name);
                         processorDescs.push(desc);
                     }
                     callback();
@@ -107,9 +113,85 @@ function init(processorsPath, initCallback) {
         if (err) {
             initCallback(err);
         } else {
+            initProcessorsMap(processorDescs);
             initCallback(null, processorDescs);
         }
     });
 }
 
+function initProcessorsMap(processorDescs) {
+    processorsMap = {};
+    processorDescs.forEach(function(processorDesc) {
+        var consumesArr = processorDesc.consumes;
+        consumesArr.forEach(function(consumesItem) {
+            var key = getProcessorsMapKey(consumesItem);
+            processorsMap[key] = processorDesc;
+        });
+    });
+}
+
+function getProcessorsMapKey(consumesItem) {
+    return consumesItem.metric + '/' + consumesItem.category;
+}
+
+function onLogFromChild(processorDesc, str) {
+    var logRecords = str.split(/\r?\n/);
+    logRecords.forEach(function(logRecord) {
+        if (logRecord.length > 0) {
+            processorDesc.logger.info(logRecord);
+        }
+    });
+}
+
+function executeProcessor(processorDesc, fileDescriptor, readStream) {
+    logger.debug('Executing processor ' + processorDesc.name);
+    // TODO: setup env/args from fileDescriptor
+    var child = childProcess.exec(processorDesc.command, {cwd: processorDesc.path}, function (err) {
+        readStream.destroy();
+        if (err) {
+            logger.error('Execution of processor failed ', err);
+        } else {
+            console.log('Processor exited');
+        }
+    });
+
+    // log child stderr as info
+    var childErrStream = child.stderr;
+    childErrStream.setEncoding('utf8');
+    childErrStream.on('data', function(str) {
+        onLogFromChild(processorDesc, str);
+    });
+    // parse JSON output on stdout
+    var objectStream = StreamArray.make();
+    objectStream.output.on('data', function(object) {
+        // TODO: support bulk operations
+        console.log(object.index, object.value);
+    });
+    objectStream.output.on('end', function() {
+        console.log('done');
+    });
+    child.stdout.setEncoding('utf8');
+    child.stdout.pipe(objectStream.input);
+    // child process input is the stream
+    readStream.pipe(child.stdin);
+}
+
+/**
+ * Processes a file using one of registered result processors.
+ *
+ * @param fileDescriptor describes file - contains path, contentType, metric, category, name, tags etc.
+ */
+function processFile(fileDescriptor) {
+    // check if we actually support it
+    var key = getProcessorsMapKey(fileDescriptor);
+    var processorDesc = processorsMap[key];
+    if (processorDesc) {
+        var readStream = fs.createReadStream(fileDescriptor.path);
+        executeProcessor(processorDesc, fileDescriptor, readStream);
+    } else {
+        throw new Error('Unsupported content ' + key);
+    }
+}
+
 exports.init = init;
+exports.processFile = processFile;

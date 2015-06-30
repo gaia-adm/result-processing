@@ -27,7 +27,11 @@ function getProcessorNames(processorDescs) {
 }
 
 function msgConsumer(msg, ackControl) {
-    logger.info(" [x] Received '%s'", msg.content.toString());
+    var contentStr = msg.content.toString();
+    logger.info(" [x] Received '%s'", contentStr);
+    // process file
+    processors.processFile(JSON.parse(contentStr));
+    // TODO: implement ack/nack properly
     ackControl.ack();
 }
 
