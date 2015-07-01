@@ -12,6 +12,8 @@ var childProcess = require('child_process');
 var VError = require('verror');
 var makeSource  = require("stream-json");
 var StreamArray = require("stream-json/utils/StreamArray");
+var events = require('events');
+var util = require("util");
 
 var logger = log4js.getLogger('processors.js');
 
@@ -45,7 +47,7 @@ function verifyProcessor(path, desc, callback) {
         return;
     }
     // verify that command script works
-    childProcess.exec(desc.command, {cwd: desc.path}, function (err, stdout, stderr) {
+    var child = childProcess.exec(desc.command, {cwd: desc.path}, function (err, stdout, stderr) {
         if (err) {
             logger.error('Unexpected return code ' + err.code + ' while executing result processor ' + path);
             logger.error(stderr);
@@ -56,6 +58,7 @@ function verifyProcessor(path, desc, callback) {
             callback();
         }
     });
+    child.stdin.end();
 }
 
 /**
@@ -103,6 +106,10 @@ function discoverProcessor(processorDescs, processorPath, callback) {
     }
 }
 
+/**
+ * Initializes processors service. Discovers result processors on supplied processorsPath. Processor descriptors will be
+ * supplied to initCallback upon completion.
+ */
 function init(processorsPath, initCallback) {
     // discover processors
     var itemPaths = fs.readdirSync(processorsPath);
@@ -134,6 +141,12 @@ function getProcessorsMapKey(consumesItem) {
     return consumesItem.metric + '/' + consumesItem.category;
 }
 
+/**
+ * To be invoked when a child result executor tries to log something.
+ *
+ * @param processorDesc descriptor of result processor
+ * @param str string to be logged
+ */
 function onLogFromChild(processorDesc, str) {
     var logRecords = str.split(/\r?\n/);
     logRecords.forEach(function(logRecord) {
@@ -143,53 +156,179 @@ function onLogFromChild(processorDesc, str) {
     });
 }
 
-function executeProcessor(processorDesc, fileDescriptor, readStream) {
+/**
+ * Converts file descriptor properties to environment variables object that can be used for process execution. We use
+ * environment variables instead of process arguments since for program it may not be easy to read the arguments
+ * for example in case of Java - one has to use -D to pass arguments to Java app. Its much easier to access process
+ * environment variables. Environment variables will be prefixed with p_. String case is preserved.
+ *
+ * @param fileDescriptor
+ */
+function toEnvParams(fileDescriptor) {
+    var ignored = {path: true};
+    var envParams = {};
+    var keys = Object.keys(fileDescriptor);
+    for (var i = 0; i < keys.length; i++) {
+        var key = keys[i];
+        if (!ignored[key]) {
+            envParams['p_' + key] = fileDescriptor[key];
+        }
+    }
+    return envParams;
+}
+
+/**
+ * Executes result processor identified by processorDesc on file identified by fileDescriptor. Processor will receive the
+ * file on stdin and is expected to provide result in the form of JSON on stdout. The expected result is JSON array of
+ * JSON objects.
+ *
+ * @param processorDesc result processor descriptor
+ * @param fileDescriptor descriptor of file - contains path, contentType, metric, category, name etc.
+ * @returns {ProcessingNotifier} which allows caller to receive processed data, be informed about end or error
+ */
+function executeProcessor(processorDesc, fileDescriptor) {
     logger.debug('Executing processor ' + processorDesc.name);
-    // TODO: setup env/args from fileDescriptor
-    var child = childProcess.exec(processorDesc.command, {cwd: processorDesc.path}, function (err) {
+    var readStream = fs.createReadStream(fileDescriptor.path);
+    var envParams = toEnvParams(fileDescriptor);
+    var child = childProcess.exec(processorDesc.command, {cwd: processorDesc.path, env: envParams}, function (err) {
         readStream.destroy();
+        cleanup();
         if (err) {
-            logger.error('Execution of processor failed ', err);
+            logger.debug('Execution of processor failed ', err);
         } else {
-            console.log('Processor exited');
+            logger.debug('Processor exited');
         }
     });
+    var notifier = new ProcessingNotifier(processorDesc, child);
 
     // log child stderr as info
     var childErrStream = child.stderr;
     childErrStream.setEncoding('utf8');
-    childErrStream.on('data', function(str) {
+    function onStdErrData(str) {
         onLogFromChild(processorDesc, str);
-    });
+    }
+    childErrStream.on('data', onStdErrData);
+
     // parse JSON output on stdout
     var objectStream = StreamArray.make();
-    objectStream.output.on('data', function(object) {
-        // TODO: support bulk operations
-        console.log(object.index, object.value);
-    });
-    objectStream.output.on('end', function() {
-        console.log('done');
-    });
+    function onObjectStreamData(object) {
+        notifier._emitData(object.value);
+    }
+    objectStream.output.on('data', onObjectStreamData);
+    function onParserError(err) {
+        notifier._emitError(new VError(err, 'Parsing error when parsing response from \'' + processorDesc.name + '\''));
+        // stop the process, since we cannot parse the result
+        notifier.stop();
+    }
+    objectStream.streams[0].on('error', onParserError);
     child.stdout.setEncoding('utf8');
     child.stdout.pipe(objectStream.input);
+
     // child process input is the stream
     readStream.pipe(child.stdin);
+
+    // cleanup
+    function cleanup() {
+        childErrStream.removeListener('data', onStdErrData);
+        objectStream.output.removeListener('data', onObjectStreamData);
+        objectStream.streams[0].removeListener('error', onParserError);
+    }
+
+    return notifier;
 }
 
 /**
  * Processes a file using one of registered result processors.
  *
- * @param fileDescriptor describes file - contains path, contentType, metric, category, name, tags etc.
+ * @param fileDescriptor describes file - contains path, contentType, metric, category, name etc.
+ * @returns {ProcessingNotifier} which allows caller to receive processed data, be informed about end or error
  */
 function processFile(fileDescriptor) {
     // check if we actually support it
     var key = getProcessorsMapKey(fileDescriptor);
     var processorDesc = processorsMap[key];
     if (processorDesc) {
-        var readStream = fs.createReadStream(fileDescriptor.path);
-        executeProcessor(processorDesc, fileDescriptor, readStream);
+        return executeProcessor(processorDesc, fileDescriptor);
     } else {
         throw new Error('Unsupported content ' + key);
+    }
+}
+
+/**
+ * Class responsible for notification of caller with JSON data returned by result processor. This class extends EventEmitter.
+ * 'data' event will be emitted whenever JSON object is sent by result processor. Receiver may choose to receive several
+ * objects before sending them in bulk for efficiency reasons. Listener function will receive an object parameter.
+ * 'end' event will be emitted when no more data is to be expected and processor returned 0 exit code.
+ * 'error' event will be emitted when result processor execution fails - either executor is not started at all or
+ * it fails with non 0 error code. In such case not all data have been processed. Listener function will receive an error
+ * parameter with error.code containing the exit code of the child process. Error event may be emitted also when there
+ * is result processor response parsing error. A parsing error causes result processor termination. Error may be
+ * emitted also in case there was a parsing error and process exited with 0.
+ *
+ * Either 'end' or 'error' event is to be expected, but not both. After an 'error' there will be no more 'data' events.
+ * Multiple 'error' events may be emitted. When there is an 'end' event, its guaranteed there are no errors.
+ *
+ * @param processorDesc result processor descriptor
+ * @param child result processor process
+ * @constructor
+ */
+function ProcessingNotifier(processorDesc, child) {
+    this.processorDesc = processorDesc;
+    this.child = child;
+    this.stopRequested = false;
+    this.exited = false;
+    this.hasError = false;
+    var that = this;
+
+    events.EventEmitter.call(this);
+
+    function onProcessExit(code) {
+        that.exited = true;
+        cleanup();
+        if (code !== 0 || that.hasError) {
+            var err = new Error('Result processor \'' + that.processorDesc.name + '\' exited with ' + code);
+            err.code = code;
+            that._emitError(err);
+        } else {
+            that.emit('end');
+        }
+    }
+    function onProcessError(err) {
+        that.exited = true;
+        cleanup();
+        that._emitError(err);
+    }
+    function cleanup() {
+        child.removeListener('exit', onProcessExit);
+        child.removeListener('error', onProcessError);
+    }
+
+    child.on('exit', onProcessExit);
+    child.on('error', onProcessError);
+}
+
+util.inherits(ProcessingNotifier, events.EventEmitter);
+
+ProcessingNotifier.prototype._emitData = function(data) {
+    if (!this.hasError && !this.exited && !this.stopRequested) {
+        this.emit('data', data);
+    }
+}
+
+ProcessingNotifier.prototype._emitError = function(err) {
+    this.hasError = true;
+    this.emit('error', err);
+}
+
+/**
+ * Stops result processor by sending SIGTERM. To be invoked when its not meaningful to continue result processing
+ * due to previous error when storing the processed data.
+ */
+ProcessingNotifier.prototype.stop = function() {
+    this.stopRequested = true;
+    if (!this.exited) {
+        // sends SIGTERM to child process. Note that process may ignore it.
+        this.child.kill();
     }
 }
 

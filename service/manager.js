@@ -10,6 +10,7 @@ var processors = require('./processors');
 var notification = require('./notification');
 var when = require('when');
 var Promise = when.promise;
+var VError = require('verror');
 
 var logger = log4js.getLogger('manager.js');
 
@@ -30,7 +31,17 @@ function msgConsumer(msg, ackControl) {
     var contentStr = msg.content.toString();
     logger.info(" [x] Received '%s'", contentStr);
     // process file
-    processors.processFile(JSON.parse(contentStr));
+    var notifier = processors.processFile(JSON.parse(contentStr));
+    notifier.on('data', function(data) {
+        console.log('Data:' + data);
+    });
+    notifier.on('end', function() {
+        console.log('End:');
+    });
+    notifier.on('error', function(err) {
+        console.log('Error:');
+        console.log(new VError(err));
+    });
     // TODO: implement ack/nack properly
     ackControl.ack();
 }
