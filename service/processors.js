@@ -165,7 +165,7 @@ function onLogFromChild(processorDesc, str) {
  * @param fileDescriptor
  */
 function toEnvParams(fileDescriptor) {
-    var ignored = {path: true};
+    var ignored = {path: true, authorization: true};
     var envParams = {};
     var keys = Object.keys(fileDescriptor);
     for (var i = 0; i < keys.length; i++) {
@@ -258,15 +258,10 @@ function processFile(fileDescriptor) {
  * Class responsible for notification of caller with JSON data returned by result processor. This class extends EventEmitter.
  * 'data' event will be emitted whenever JSON object is sent by result processor. Receiver may choose to receive several
  * objects before sending them in bulk for efficiency reasons. Listener function will receive an object parameter.
- * 'end' event will be emitted when no more data is to be expected and processor returned 0 exit code.
- * 'error' event will be emitted when result processor execution fails - either executor is not started at all or
- * it fails with non 0 error code. In such case not all data have been processed. Listener function will receive an error
- * parameter with error.code containing the exit code of the child process. Error event may be emitted also when there
- * is result processor response parsing error. A parsing error causes result processor termination. Error may be
- * emitted also in case there was a parsing error and process exited with 0.
- *
- * Either 'end' or 'error' event is to be expected, but not both. After an 'error' there will be no more 'data' events.
- * Multiple 'error' events may be emitted. When there is an 'end' event, its guaranteed there are no errors.
+ * 'end' event will be emitted when no more data is to be expected. If process startup failed, process exited with non 0
+ * code or exited with 0 but there was a previous error there will be an error argument. In such case the operation is
+ * not to be considered success.
+ * 'error' event will be emitted if there was parsing error of result processor result. No more data events will be emitted.
  *
  * @param processorDesc result processor descriptor
  * @param child result processor process
@@ -285,18 +280,30 @@ function ProcessingNotifier(processorDesc, child) {
     function onProcessExit(code) {
         that.exited = true;
         cleanup();
-        if (code !== 0 || that.hasError) {
+        if (that.stopRequested) {
+            that.hasError = true;
+            var err = new Error('Result processor \'' + that.processorDesc.name + '\' was requested to stop and exited with ' + code);
+            err.code = code;
+            that.emit('end', err);
+        } else if (that.hasError) {
+            that.hasError = true;
+            var err = new Error('Result processing of \'' + that.processorDesc.name + '\' had a previous error, process exited with ' + code);
+            err.code = code;
+            that.emit('end', err);
+        } else if (code !== 0) {
+            that.hasError = true;
             var err = new Error('Result processor \'' + that.processorDesc.name + '\' exited with ' + code);
             err.code = code;
-            that._emitError(err);
+            that.emit('end', err);
         } else {
             that.emit('end');
         }
     }
     function onProcessError(err) {
         that.exited = true;
+        that.hasError = true;
         cleanup();
-        that._emitError(err);
+        that.emit('end', err);
     }
     function cleanup() {
         child.removeListener('exit', onProcessExit);
@@ -322,7 +329,8 @@ ProcessingNotifier.prototype._emitError = function(err) {
 
 /**
  * Stops result processor by sending SIGTERM. To be invoked when its not meaningful to continue result processing
- * due to previous error when storing the processed data.
+ * due to previous error when storing the processed data. No more data events will be emitted even if process refuses
+ * to exit.
  */
 ProcessingNotifier.prototype.stop = function() {
     this.stopRequested = true;

@@ -6,6 +6,8 @@
   "author": "Jaroslav Libak <jaroslav.libak@hp.com>",
   "dependencies": {
     "log4js": "0.6.26",
+    "request": "2.58.0",
+    "http-status-codes": "1.0.5",
     "amqplib": "0.3.2",
     "when": "3.7.3",
     "verror": "1.6.0",
