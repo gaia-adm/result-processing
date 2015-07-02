@@ -15,7 +15,7 @@ var VError = require('verror');
 
 var logger = log4js.getLogger('manager.js');
 
-var DEFAULT_BATCH_SIZE = 20;
+var DEFAULT_BATCH_SIZE = 50;
 
 /**
  * Returns batch size when pushing metrics to metrics-gateway-service.
@@ -53,8 +53,9 @@ function msgConsumer(msg, ackControl) {
     var notifier = processors.processFile(fileDescriptor);
     var ackResponse = false;
     // handle new processed data
-    function onData(data) {
-        metricsGateway.send(fileDescriptor.authorization, data, function(err) {
+    var dataArr = [];
+    function sendData(dataToSend, end) {
+        metricsGateway.send(fileDescriptor.authorization, dataToSend, function(err) {
             if (err) {
                 logger.error(err.stack);
                 logger.error(new VError(err, 'Failed to send metrics to metrics-gateway-service'));
@@ -65,22 +66,42 @@ function msgConsumer(msg, ackControl) {
                     ackControl.nack();
                     ackResponse = true;
                 }
+            } else if (end && !ackResponse) {
+                ackControl.ack();
+                ackResponse = true;
             }
         });
+    }
+    function onData(data) {
+        dataArr.push(data);
+        if (dataArr.length >= getBatchSize()) {
+            // reached batch size, send data
+            var localArr = dataArr;
+            dataArr = [];
+            sendData(localArr);
+        }
     }
     notifier.on('data', onData);
     // handle on data end
     function onEnd(err) {
         logger.debug('End of data');
-        if (!ackResponse) {
-            if (err) {
-                logger.error(err.stack);
-                logger.error(new VError(err, 'Result processing failed with code %s', err.code));
-                ackControl.nack();
-            } else {
-                ackControl.ack();
+        if (dataArr.length >= 0) {
+            // there are still data to send
+            var localArr = dataArr;
+            dataArr = [];
+            sendData(localArr, true);
+        } else {
+            // no data to send, we are at end
+            if (!ackResponse) {
+                if (err) {
+                    logger.error(err.stack);
+                    logger.error(new VError(err, 'Result processing failed with code %s', err.code));
+                    ackControl.nack();
+                } else {
+                    ackControl.ack();
+                }
+                ackResponse = true;
             }
-            ackResponse = true;
         }
     }
     notifier.on('end', onEnd);
