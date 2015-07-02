@@ -24,13 +24,21 @@ process.stdin.on('end', function() {
 });
 
 console.log('[');
-console.log('{"dummy": "dummy1"},');
-console.log('{"dummy": "dummy2"},');
-console.log('{"dumm');
-console.log('y": "dummy3"}');
-
+console.log(JSON.stringify({
+    "metric": "defect",
+    "category": "defect",
+    "name": "1592",
+    "source": "agm-919190571",
+    "timestamp": new Date().getTime(),
+    "measurements": [{"name": "severity", "value": 2}, {"name": "time_spent", "value": 60}]
+}));
+console.log(',');
+console.log(JSON.stringify({
+    "metric": "defect",
+    "category": "defect",
+    "name": "1593",
+    "source": "agm-919190571",
+    "timestamp": new Date().getTime(),
+    "measurements": [{"name": "severity", "value": 3}, {"name": "time_spent", "value": 120}]
+}));
 console.log(']');
-
-/*if (paramCount > 0) {
-    process.exit(1);
-}*/

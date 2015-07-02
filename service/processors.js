@@ -10,10 +10,10 @@ var path = require('path');
 var async = require("async");
 var childProcess = require('child_process');
 var VError = require('verror');
-var makeSource  = require("stream-json");
-var StreamArray = require("stream-json/utils/StreamArray");
+var makeSource  = require('stream-json');
+var StreamArray = require('stream-json/utils/StreamArray');
 var events = require('events');
-var util = require("util");
+var util = require('util');
 
 var logger = log4js.getLogger('processors.js');
 

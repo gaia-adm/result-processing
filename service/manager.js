@@ -54,7 +54,6 @@ function msgConsumer(msg, ackControl) {
     var ackResponse = false;
     // handle new processed data
     function onData(data) {
-        logger.debug('Parsed data:' + data);
         metricsGateway.send(fileDescriptor.authorization, data, function(err) {
             if (err) {
                 logger.error(err.stack);
