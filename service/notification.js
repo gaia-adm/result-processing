@@ -63,7 +63,7 @@ function initQueue(channel, processorDesc, msgConsumer) {
     var queue = processorDesc.name;
     var ok = channel.assertQueue(queue, {durable: true});
 
-    ok = ok.then(function(_qok) {
+    ok = ok.then(function() {
         logger.debug('Asserted queue \'' + queue + '\' into existence');
         // bind 'result-upload' exchange to our queue using defined routing keys
         var consumesArr = processorDesc.consumes;
@@ -77,7 +77,7 @@ function initQueue(channel, processorDesc, msgConsumer) {
         return when.all(promises);
     });
 
-    return ok.then(function(_qbindOk) {
+    return ok.then(function() {
         return channel.consume(queue, function(msg) {
             // call msgConsumer with message and contoller to ack it
             msgConsumer(msg, getAckController(channel, msg));

@@ -10,7 +10,6 @@ var path = require('path');
 var async = require("async");
 var childProcess = require('child_process');
 var VError = require('verror');
-var makeSource  = require('stream-json');
 var StreamArray = require('stream-json/utils/StreamArray');
 var events = require('events');
 var util = require('util');
@@ -287,20 +286,21 @@ function ProcessingNotifier(processorDesc, child) {
 
     function onProcessExit(code) {
         that.exited = true;
+        var err;
         cleanup();
         if (that.stopRequested) {
             that.hasError = true;
-            var err = new Error('Result processor \'' + that.processorDesc.name + '\' was requested to stop and exited with ' + code);
+            err = new Error('Result processor \'' + that.processorDesc.name + '\' was requested to stop and exited with ' + code);
             err.code = code;
             that.emit('end', err);
         } else if (that.hasError) {
             that.hasError = true;
-            var err = new Error('Result processing of \'' + that.processorDesc.name + '\' had a previous error, process exited with ' + code);
+            err = new Error('Result processing of \'' + that.processorDesc.name + '\' had a previous error, process exited with ' + code);
             err.code = code;
             that.emit('end', err);
         } else if (code !== 0) {
             that.hasError = true;
-            var err = new Error('Result processor \'' + that.processorDesc.name + '\' exited with ' + code);
+            err = new Error('Result processor \'' + that.processorDesc.name + '\' exited with ' + code);
             err.code = code;
             that.emit('end', err);
         } else if (that.dataEnded) {
@@ -336,7 +336,7 @@ ProcessingNotifier.prototype._emitData = function(data) {
     if (!this.hasError && !this.dataEnded && !this.stopRequested) {
         this.emit('data', data);
     }
-}
+};
 
 /**
  * Emits error event.
@@ -347,7 +347,7 @@ ProcessingNotifier.prototype._emitData = function(data) {
 ProcessingNotifier.prototype._emitError = function(err) {
     this.hasError = true;
     this.emit('error', err);
-}
+};
 
 /**
  * To be invoked when the whole output stream has been parsed and there are no more data to be emitted. Data end can happen
@@ -360,7 +360,7 @@ ProcessingNotifier.prototype._onDataEnd = function() {
         // process already exited with 0 but no 'end' event was emitted yet
         this.emit('end');
     } // else 'end' will be emitted when process exits (wait for result code)
-}
+};
 
 /**
  * Stops result processor by sending SIGTERM. To be invoked when its not meaningful to continue result processing
@@ -373,7 +373,7 @@ ProcessingNotifier.prototype.stop = function() {
         // sends SIGTERM to child process. Note that process may ignore it.
         this.child.kill();
     }
-}
+};
 
 exports.init = init;
 exports.processFile = processFile;
