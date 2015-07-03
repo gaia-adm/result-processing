@@ -217,6 +217,10 @@ function executeProcessor(processorDesc, fileDescriptor) {
         notifier._emitData(object.value);
     }
     objectStream.output.on('data', onObjectStreamData);
+    function onObjectStreamEnd() {
+        notifier._onDataEnd();
+    }
+    objectStream.output.on('end', onObjectStreamEnd);
     function onParserError(err) {
         notifier._emitError(new VError(err, 'Parsing error when parsing response from \'' + processorDesc.name + '\''));
         // stop the process, since we cannot parse the result
@@ -233,6 +237,7 @@ function executeProcessor(processorDesc, fileDescriptor) {
     function cleanup() {
         childErrStream.removeListener('data', onStdErrData);
         objectStream.output.removeListener('data', onObjectStreamData);
+        objectStream.output.removeListener('end', onObjectStreamEnd);
         objectStream.streams[0].removeListener('error', onParserError);
     }
 
@@ -275,6 +280,7 @@ function ProcessingNotifier(processorDesc, child) {
     this.stopRequested = false;
     this.exited = false;
     this.hasError = false;
+    this.dataEnded = false;
     var that = this;
 
     events.EventEmitter.call(this);
@@ -297,9 +303,10 @@ function ProcessingNotifier(processorDesc, child) {
             var err = new Error('Result processor \'' + that.processorDesc.name + '\' exited with ' + code);
             err.code = code;
             that.emit('end', err);
-        } else {
+        } else if (that.dataEnded) {
+            // data ended but we haven't emited 'end' yet since we waited for result code
             that.emit('end');
-        }
+        } // else 0 code and there is still data to be parsed from stdout
     }
     function onProcessError(err) {
         that.exited = true;
@@ -319,14 +326,14 @@ function ProcessingNotifier(processorDesc, child) {
 util.inherits(ProcessingNotifier, events.EventEmitter);
 
 /**
- * Emits data event with some object. This event will only be emited if there was no previous error, the process hasn't
- * exited yet and stop wasn't requested. Otherwise it makes no sense to emit this event.
+ * Emits data event with some object. This event will only be emited if there was no previous error and stop wasn't
+ * requested. Otherwise it makes no sense to emit this event.
  *
  * @param data object the event should contain
  * @private
  */
 ProcessingNotifier.prototype._emitData = function(data) {
-    if (!this.hasError && !this.exited && !this.stopRequested) {
+    if (!this.hasError && !this.dataEnded && !this.stopRequested) {
         this.emit('data', data);
     }
 }
@@ -340,6 +347,19 @@ ProcessingNotifier.prototype._emitData = function(data) {
 ProcessingNotifier.prototype._emitError = function(err) {
     this.hasError = true;
     this.emit('error', err);
+}
+
+/**
+ * To be invoked when the whole output stream has been parsed and there are no more data to be emitted. Data end can happen
+ * before or after child process exists.
+ * @private
+ */
+ProcessingNotifier.prototype._onDataEnd = function() {
+    this.dataEnded = true;
+    if (this.exited && !this.hasError && !this.stopRequested) {
+        // process already exited with 0 but no 'end' event was emitted yet
+        this.emit('end');
+    } // else 'end' will be emitted when process exits (wait for result code)
 }
 
 /**

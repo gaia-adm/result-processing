@@ -32,13 +32,15 @@ console.log(JSON.stringify({
     "timestamp": new Date().getTime(),
     "measurements": [{"name": "severity", "value": 2}, {"name": "time_spent", "value": 60}]
 }));
-console.log(',');
-console.log(JSON.stringify({
-    "metric": "defect",
-    "category": "defect",
-    "name": "1593",
-    "source": "agm-919190571",
-    "timestamp": new Date().getTime(),
-    "measurements": [{"name": "severity", "value": 3}, {"name": "time_spent", "value": 120}]
-}));
+for (var i = 0; i < 1000; i++) {
+    console.log(',');
+    console.log(JSON.stringify({
+        "metric": "defect",
+        "category": "defect",
+        "name": "1593",
+        "source": "agm-919190571",
+        "timestamp": new Date().getTime(),
+        "measurements": [{"name": "severity", "value": 3}, {"name": "time_spent", "value": 120}]
+    }));
+}
 console.log(']');
