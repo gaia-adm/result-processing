@@ -17,7 +17,9 @@ var util = require('util');
 
 var logger = log4js.getLogger('processors.js');
 
-// map of 'metric/category' key to processor descriptor
+/**
+ * Map of 'metric/category' key to processor descriptor.
+ */
 var processorsMap = {};
 
 /**
@@ -316,12 +318,25 @@ function ProcessingNotifier(processorDesc, child) {
 
 util.inherits(ProcessingNotifier, events.EventEmitter);
 
+/**
+ * Emits data event with some object. This event will only be emited if there was no previous error, the process hasn't
+ * exited yet and stop wasn't requested. Otherwise it makes no sense to emit this event.
+ *
+ * @param data object the event should contain
+ * @private
+ */
 ProcessingNotifier.prototype._emitData = function(data) {
     if (!this.hasError && !this.exited && !this.stopRequested) {
         this.emit('data', data);
     }
 }
 
+/**
+ * Emits error event.
+ *
+ * @param err instance of error
+ * @private
+ */
 ProcessingNotifier.prototype._emitError = function(err) {
     this.hasError = true;
     this.emit('error', err);

@@ -11,6 +11,13 @@ var VError = require('verror');
 
 var logger = log4js.getLogger('metrics_gateway.js');
 
+/**
+ * Sends measures/metrics to metrics-gateway-service.
+ *
+ * @param accessToken OAuth access token
+ * @param data an object to send or array of objects
+ * @param callback callback that will be notified upon success/error
+ */
 function send(accessToken, data, callback) {
     if (logger.level.level <= log4js.levels.DEBUG.level) {
         logger.debug('Sending to /mgs/rest/v1/gateway/publish: ' + JSON.stringify(data));

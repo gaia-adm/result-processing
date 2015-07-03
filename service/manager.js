@@ -119,6 +119,12 @@ function msgConsumer(msg, ackControl) {
     notifier.on('error', onError);
 }
 
+/**
+ * Performs initialization of the result-processing service.
+ *
+ * @param processorsPath directory where result processors are located
+ * @returns promise
+ */
 function startServer(processorsPath) {
     // discover result processors
     return new Promise(function(fulfill, reject) {
