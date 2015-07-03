@@ -13,7 +13,8 @@
     "verror": "1.6.0",
     "path": "0.11.14",
     "async": "1.2.1",
-    "stream-json": "0.4.0"
+    "stream-json": "0.4.0",
+    "grace": "0.2.5"
   },
   "devDependencies": {
     "grunt": "^0.4.5",

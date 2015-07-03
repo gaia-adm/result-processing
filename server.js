@@ -12,24 +12,47 @@ var log4js = require('log4js');
 log4js.replaceConsole();
 var logger = log4js.getLogger('server.js');
 
+var grace = require('grace');
 var manager = require('./service/manager');
 var path = require('path');
+
+var graceApp = grace.create();
 
 exitOnSignal('SIGINT');
 exitOnSignal('SIGTERM');
 
-// TODO: use grace or other module for graceful shutdown (close sockets etc) - not easy as we need to exec async code in multiple modules
 function exitOnSignal(signal) {
     process.on(signal, function() {
         logger.debug('Caught ' + signal + ', exiting');
-        process.exit(1);
+        graceApp.shutdown(1);
     });
 }
 
 var processorsPath = process.env.PROCESSORS_PATH || path.join(__dirname, 'processors');
 
-manager.startServer(processorsPath).done(function onOk() {
-    logger.info(' [*] Waiting for messages. To exit press CTRL+C');
-}, function onError(err) {
-    logger.error('Server failed to start due to error', err);
+graceApp.on('start', function () {
+    manager.startServer(processorsPath).done(function onOk() {
+        logger.info(' [*] Waiting for messages. To exit press CTRL+C');
+    }, function onError(err) {
+        logger.error('Server failed to start due to error', err);
+        graceApp.shutdown(1);
+    });
 });
+
+graceApp.on('error', function(err){
+    console.error(err);
+});
+
+graceApp.on('shutdown', function(cb) {
+    manager.shutdown().done(function onOk() {
+        cb();
+    }, function onFailed(err) {
+        cb(err);
+    });
+});
+
+graceApp.on ('exit', function(code){
+    logger.debug('Exiting with code ' + code);
+});
+
+graceApp.start();

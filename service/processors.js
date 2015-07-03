@@ -8,6 +8,7 @@ var log4js = require('log4js');
 var fs = require('fs');
 var path = require('path');
 var async = require("async");
+var nodefn = require('when/node');
 var childProcess = require('child_process');
 var VError = require('verror');
 var StreamArray = require('stream-json/utils/StreamArray');
@@ -109,21 +110,20 @@ function discoverProcessor(processorDescs, processorPath, callback) {
 
 /**
  * Initializes processors service. Discovers result processors on supplied processorsPath. Processor descriptors will be
- * supplied to initCallback upon completion.
+ * supplied to promise upon completion.
+ *
+ * @returns promise
  */
-function init(processorsPath, initCallback) {
+function init(processorsPath) {
     // discover processors
     var itemPaths = fs.readdirSync(processorsPath);
     var processorDescs = [];
-    async.each(itemPaths, function(itemPath, callback) {
+    var ok = nodefn.lift(async.each)(itemPaths, function(itemPath, callback) {
         discoverProcessor(processorDescs, path.join(processorsPath, itemPath), callback);
-    }, function(err) {
-        if (err) {
-            initCallback(err);
-        } else {
-            initProcessorsMap(processorDescs);
-            initCallback(null, processorDescs);
-        }
+    });
+    return ok.then(function onFullfilled() {
+        initProcessorsMap(processorDescs);
+        return processorDescs;
     });
 }
 
@@ -274,43 +274,43 @@ function processFile(fileDescriptor) {
  * @constructor
  */
 function ProcessingNotifier(processorDesc, child) {
-    this.processorDesc = processorDesc;
-    this.child = child;
-    this.stopRequested = false;
-    this.exited = false;
-    this.hasError = false;
-    this.dataEnded = false;
+    this._processorDesc = processorDesc;
+    this._child = child;
+    this._stopRequested = false;
+    this._exited = false;
+    this._hasError = false;
+    this._dataEnded = false;
     var that = this;
 
     events.EventEmitter.call(this);
 
     function onProcessExit(code) {
-        that.exited = true;
+        that._exited = true;
         var err;
         cleanup();
-        if (that.stopRequested) {
-            that.hasError = true;
-            err = new Error('Result processor \'' + that.processorDesc.name + '\' was requested to stop and exited with ' + code);
+        if (that._stopRequested) {
+            that._hasError = true;
+            err = new Error('Result processor \'' + that._processorDesc.name + '\' was requested to stop and exited with ' + code);
             err.code = code;
             that.emit('end', err);
-        } else if (that.hasError) {
-            that.hasError = true;
-            err = new Error('Result processing of \'' + that.processorDesc.name + '\' had a previous error, process exited with ' + code);
+        } else if (that._hasError) {
+            that._hasError = true;
+            err = new Error('Result processing of \'' + that._processorDesc.name + '\' had a previous error, process exited with ' + code);
             err.code = code;
             that.emit('end', err);
         } else if (code !== 0) {
-            that.hasError = true;
-            err = new Error('Result processor \'' + that.processorDesc.name + '\' exited with ' + code);
+            that._hasError = true;
+            err = new Error('Result processor \'' + that._processorDesc.name + '\' exited with ' + code);
             err.code = code;
             that.emit('end', err);
-        } else if (that.dataEnded) {
+        } else if (that._dataEnded) {
             // data ended but we haven't emited 'end' yet since we waited for result code
             that.emit('end');
         } // else 0 code and there is still data to be parsed from stdout
     }
     function onProcessError(err) {
-        that.exited = true;
-        that.hasError = true;
+        that._exited = true;
+        that._hasError = true;
         cleanup();
         that.emit('end', err);
     }
@@ -333,7 +333,7 @@ util.inherits(ProcessingNotifier, events.EventEmitter);
  * @private
  */
 ProcessingNotifier.prototype._emitData = function(data) {
-    if (!this.hasError && !this.dataEnded && !this.stopRequested) {
+    if (!this._hasError && !this._dataEnded && !this._stopRequested) {
         this.emit('data', data);
     }
 };
@@ -345,7 +345,7 @@ ProcessingNotifier.prototype._emitData = function(data) {
  * @private
  */
 ProcessingNotifier.prototype._emitError = function(err) {
-    this.hasError = true;
+    this._hasError = true;
     this.emit('error', err);
 };
 
@@ -355,8 +355,8 @@ ProcessingNotifier.prototype._emitError = function(err) {
  * @private
  */
 ProcessingNotifier.prototype._onDataEnd = function() {
-    this.dataEnded = true;
-    if (this.exited && !this.hasError && !this.stopRequested) {
+    this._dataEnded = true;
+    if (this._exited && !this._hasError && !this._stopRequested) {
         // process already exited with 0 but no 'end' event was emitted yet
         this.emit('end');
     } // else 'end' will be emitted when process exits (wait for result code)
@@ -368,10 +368,10 @@ ProcessingNotifier.prototype._onDataEnd = function() {
  * to exit.
  */
 ProcessingNotifier.prototype.stop = function() {
-    this.stopRequested = true;
-    if (!this.exited) {
+    this._stopRequested = true;
+    if (!this._exited) {
         // sends SIGTERM to child process. Note that process may ignore it.
-        this.child.kill();
+        this._child.kill();
     }
 };
 

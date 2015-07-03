@@ -10,7 +10,6 @@ var processors = require('./processors');
 var notification = require('./notification');
 var metricsGateway = require('./metrics_gateway');
 var when = require('when');
-var Promise = when.promise;
 var VError = require('verror');
 
 var logger = log4js.getLogger('manager.js');
@@ -127,26 +126,24 @@ function msgConsumer(msg, ackControl) {
  */
 function startServer(processorsPath) {
     // discover result processors
-    return new Promise(function(fulfill, reject) {
-        // TODO: convert processors.init to Promises
-        processors.init(processorsPath, function(err, processorDescs) {
-            if (err) {
-                reject(err);
-            } else {
-                // we got array of discovered processors
-                if (processorDescs.length > 0) {
-                    logger.info('Found the following result processors: ' + getProcessorNames(processorDescs));
-                    notification.initAmq(processorDescs, msgConsumer).done(function onOk() {
-                        fulfill();
-                    }, function onError(err) {
-                        reject(err);
-                    });
-                } else {
-                    reject(new Error('Found no result processors'));
-                }
-            }
-        });
+    var ok = when.try(processors.init, processorsPath);
+    return ok.then(function(processorDescs) {
+        // we got array of discovered processors
+        if (processorDescs.length > 0) {
+            logger.info('Found the following result processors: ' + getProcessorNames(processorDescs));
+            return notification.initAmq(processorDescs, msgConsumer);
+        } else {
+            throw new Error('Found no result processors');
+        }
     });
 }
 
+/**
+ * Shuts down everything cleanly.
+ */
+function shutdown() {
+    return notification.shutdown();
+}
+
 exports.startServer = startServer;
+exports.shutdown = shutdown;
