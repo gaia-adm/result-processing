@@ -1,7 +1,7 @@
 /**
  * Metrics gateway client. Responsible for pushing processed metrics to metrics-gateway-service.
  *
- * @module service/metrics_gateway
+ * @module service/metrics-gateway
  */
 'use strict';
 
@@ -10,6 +10,17 @@ var request = require('request');
 var VError = require('verror');
 
 var logger = log4js.getLogger('metrics_gateway.js');
+
+/**
+ * Returns URI where measures/metrics should be sent.
+ *
+ * @returns {string}
+ */
+function getSendUri() {
+    var host = process.env.METRICSGW_HOST || 'metricsgw';
+    var port = process.env.METRICSGW_PORT || 9002;
+    return 'http://' + host + ':' + port + '/mgs/rest/v1/gateway/publish';
+}
 
 /**
  * Sends measures/metrics to metrics-gateway-service.
@@ -25,7 +36,7 @@ function send(accessToken, data, callback) {
 
     var body = JSON.stringify(Array.isArray(data) ? data : [data]);
     var options = {
-        uri: 'http://metricsgw:9002/mgs/rest/v1/gateway/publish', method: 'POST', headers: {
+        uri: getSendUri(), method: 'POST', headers: {
             'content-type': 'application/json'
         }, auth: {
             sendImmediately: true, bearer: accessToken

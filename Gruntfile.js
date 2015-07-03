@@ -15,9 +15,18 @@ module.exports = function(grunt) {
                     destination: 'doc', configure: './jsdoc-conf.json'
                 }
             }
+        }, mochaTest: {
+            system: {
+                options: {
+                    reporter: 'spec', captureFile: 'system-tests-results.txt'
+                }, src: ['tests/system/**/*.js']
+            }
         }
     });
 
     grunt.loadNpmTasks('grunt-contrib-jshint');
+    grunt.loadNpmTasks('grunt-mocha-test');
     grunt.loadNpmTasks('grunt-jsdoc');
+
+    grunt.registerTask('system', ['mochaTest:system']);
 };

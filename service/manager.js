@@ -8,7 +8,7 @@
 var log4js = require('log4js');
 var processors = require('./processors');
 var notification = require('./notification');
-var metricsGateway = require('./metrics_gateway');
+var metricsGateway = require('./metrics-gateway');
 var when = require('when');
 var VError = require('verror');
 
