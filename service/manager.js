@@ -60,9 +60,11 @@ function msgConsumer(msg, ackControl) {
                 logger.error(new VError(err, 'Failed to send metrics to metrics-gateway-service'));
                 // stop further processing
                 notifier.stop();
-                // nack immediately, no need to wait
+                // ack immediately, no need to wait
                 if (!ackResponse) {
-                    ackControl.nack();
+                    // TODO: in case of send failure the message should be saved in DB to allow later processing
+                    // we cannot nack since it will result in immediate redelivery and another failure for some time (or forever)
+                    ackControl.ack();
                     ackResponse = true;
                 }
             } else if (end && !ackResponse) {
@@ -93,12 +95,12 @@ function msgConsumer(msg, ackControl) {
             // no data to send, we are at end
             if (!ackResponse) {
                 if (err) {
+                    // TODO: in case of processing failure the message should be saved in DB to allow later processing/investigation
+                    // we cannot nack since it will result in immediate redelivery and another failure forever
                     logger.error(err.stack);
                     logger.error(new VError(err, 'Result processing failed with code %s', err.code));
-                    ackControl.nack();
-                } else {
-                    ackControl.ack();
                 }
+                ackControl.ack();
                 ackResponse = true;
             }
         }
@@ -109,9 +111,11 @@ function msgConsumer(msg, ackControl) {
         logger.error(err.stack);
         logger.error(new VError(err, 'Data processing error'));
         // further processing will stop automatically
-        // nack immediately, no need to wait
+        // ack immediately, no need to wait
+        // TODO: in case of processing failure the message should be saved in DB to allow later processing/investigation
+        // we cannot nack since it will result in immediate redelivery and another failure forever
         if (!ackResponse) {
-            ackControl.nack();
+            ackControl.ack();
             ackResponse = true;
         }
     }
