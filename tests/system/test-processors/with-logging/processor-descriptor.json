@@ -1,0 +1,5 @@
+{
+  "name": "with-logging",
+  "command": "node processor.js",
+  "consumes" : [{"metric": "with-logging", "category": "with-logging"}]
+}

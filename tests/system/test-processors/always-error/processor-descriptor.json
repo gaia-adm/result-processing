@@ -1,0 +1,5 @@
+{
+  "name": "always-error",
+  "command": "node processor.js",
+  "consumes" : [{"metric": "always-error", "category": "always-error"}]
+}

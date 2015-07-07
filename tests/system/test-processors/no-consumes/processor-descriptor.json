@@ -1,0 +1,4 @@
+{
+  "name": "no-consumes",
+  "command": "node processor.js"
+}

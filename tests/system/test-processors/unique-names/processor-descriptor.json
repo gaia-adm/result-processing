@@ -1,0 +1,5 @@
+{
+  "name": "unique-names1",
+  "command": "node processor.js",
+  "consumes" : [{"metric": "unique-names2", "category": "unique-names3"}]
+}
