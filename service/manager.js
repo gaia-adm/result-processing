@@ -11,6 +11,7 @@ var notification = require('./notification');
 var metricsGateway = require('./metrics-gateway');
 var when = require('when');
 var VError = require('verror');
+var fs = require('fs');
 
 var logger = log4js.getLogger('manager.js');
 
@@ -64,12 +65,14 @@ function msgConsumer(msg, ackControl) {
                 if (!ackResponse) {
                     // TODO: in case of send failure the message should be saved in DB to allow later processing
                     // we cannot nack since it will result in immediate redelivery and another failure for some time (or forever)
+                    // in case of error we also don't delete the file
                     ackControl.ack();
                     ackResponse = true;
                 }
             } else if (end && !ackResponse) {
                 ackControl.ack();
                 ackResponse = true;
+                unlinkFile(fileDescriptor);
             }
         });
     }
@@ -97,11 +100,15 @@ function msgConsumer(msg, ackControl) {
                 if (err) {
                     // TODO: in case of processing failure the message should be saved in DB to allow later processing/investigation
                     // we cannot nack since it will result in immediate redelivery and another failure forever
+                    // in case of error we also don't delete the file
                     logger.error(err.stack);
                     logger.error(new VError(err, 'Result processing failed with code %s', err.code));
                 }
                 ackControl.ack();
                 ackResponse = true;
+                if (!err) {
+                    unlinkFile(fileDescriptor);
+                }
             }
         }
     }
@@ -120,6 +127,19 @@ function msgConsumer(msg, ackControl) {
         }
     }
     notifier.on('error', onError);
+}
+
+/**
+ * Unlinks file in file system identified by given file descriptor. File will be deleted once the link count reaches 0.
+ *
+ * @param fileDescriptor file descriptor containing file path
+ */
+function unlinkFile(fileDescriptor) {
+    fs.unlink(fileDescriptor.path, function(err) {
+        if (err) {
+            logger.error(err, 'Failed to unlink ' + fileDescriptor.path);
+        }
+    });
 }
 
 /**
