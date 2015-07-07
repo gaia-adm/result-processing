@@ -12,6 +12,7 @@ describe('notification tests', function() {
     var msgConsumer;
 
     before(function(done) {
+        this.timeout(5000); // higher timeout than default 2s is needed
         var processorDescs = [{
             'name': 'testProcessor1',
             'consumes': [{'metric': 'testMetric1', 'category': 'testCategory1'}]
