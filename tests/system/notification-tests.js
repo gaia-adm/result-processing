@@ -4,7 +4,7 @@ var assert = chai.assert;
 var amqp = require('amqplib');
 var when = require('when');
 var uuid = require('node-uuid');
-var notification = require("./../../service/notification");
+var notification = require('./../../service/notification');
 
 describe('notification tests', function() {
     var amqConn;

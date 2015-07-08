@@ -7,7 +7,7 @@ var path = require('path');
 var tmp = require('tmp');
 var fs = require('fs');
 var log4js = require('log4js');
-var processors = require("./../../service/processors");
+var processors = require('./../../service/processors');
 
 describe('processors tests', function() {
     describe('init', function() {
