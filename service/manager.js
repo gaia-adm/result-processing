@@ -158,7 +158,7 @@ function startServer(processorsPath) {
             logger.info('Found the following result processors: ' + getProcessorNames(processorDescs));
             return notification.initAmq(processorDescs, msgConsumer);
         } else {
-            throw new Error('Found no result processors');
+            throw new Error('Found no result processors in "' + processorsPath + '"');
         }
     });
 }
