@@ -1,0 +1,5 @@
+{
+  "name": "produce-two-objects",
+  "command": "node processor.js",
+  "consumes" : [{"metric": "produce-two-objects-metric", "category": "produce-two-objects-category"}]
+}

@@ -163,34 +163,34 @@ function onLogFromChild(processorDesc, str) {
  * for example in case of Java - one has to use -D to pass arguments to Java app. Its much easier to access process
  * environment variables. Environment variables will be prefixed with p_. String case is preserved.
  *
- * @param fileDescriptor
+ * @param fileMetadata
  */
-function toEnvParams(fileDescriptor) {
-    var ignored = {path: true, authorization: true};
+function toEnvParams(fileMetadata) {
+    var ignored = {path: true}; // hide file path from result processor app
     var envParams = {};
-    var keys = Object.keys(fileDescriptor);
+    var keys = Object.keys(fileMetadata);
     for (var i = 0; i < keys.length; i++) {
         var key = keys[i];
         if (!ignored[key]) {
-            envParams['p_' + key] = fileDescriptor[key];
+            envParams['p_' + key] = fileMetadata[key];
         }
     }
     return envParams;
 }
 
 /**
- * Executes result processor identified by processorDesc on file identified by fileDescriptor. Processor will receive the
+ * Executes result processor identified by processorDesc on file identified by fileMetadata. Processor will receive the
  * file on stdin and is expected to provide result in the form of JSON on stdout. The expected result is JSON array of
  * JSON objects.
  *
  * @param processorDesc result processor descriptor
- * @param fileDescriptor descriptor of file - contains path, contentType, metric, category, name etc.
+ * @param fileMetadata descriptor of file - contains path, contentType, metric, category, name etc.
  * @returns {ProcessingNotifier} which allows caller to receive processed data, be informed about end or error
  */
-function executeProcessor(processorDesc, fileDescriptor) {
+function executeProcessor(processorDesc, fileMetadata) {
     logger.debug('Executing processor ' + processorDesc.name);
-    var readStream = fs.createReadStream(fileDescriptor.path);
-    var envParams = toEnvParams(fileDescriptor);
+    var readStream = fs.createReadStream(fileMetadata.path);
+    var envParams = toEnvParams(fileMetadata);
     var child = childProcess.exec(processorDesc.command, {cwd: processorDesc.path, env: envParams}, function (err) {
         readStream.destroy();
         cleanup();
@@ -221,7 +221,9 @@ function executeProcessor(processorDesc, fileDescriptor) {
     }
     objectStream.output.on('end', onObjectStreamEnd);
     function onParserError(err) {
-        notifier._emitError(new VError(err, 'Parsing error when parsing response from \'' + processorDesc.name + '\''));
+        // can be parsing error or error during execution of notifier 'data' handler
+        logger.error(err.stack);
+        notifier._emitError(new VError(err, 'Error when handling response from \'' + processorDesc.name + '\''));
         // stop the process, since we cannot parse the result
         notifier.stop();
     }
@@ -246,15 +248,15 @@ function executeProcessor(processorDesc, fileDescriptor) {
 /**
  * Processes a file using one of registered result processors.
  *
- * @param fileDescriptor describes file - contains path, contentType, metric, category, name etc.
+ * @param fileMetadata describes file - contains path, contentType, metric, category, name etc.
  * @returns {ProcessingNotifier} which allows caller to receive processed data, be informed about end or error
  */
-function processFile(fileDescriptor) {
+function processFile(fileMetadata) {
     // check if we actually support it
-    var key = getProcessorsMapKey(fileDescriptor);
+    var key = getProcessorsMapKey(fileMetadata);
     var processorDesc = processorsMap[key];
     if (processorDesc) {
-        return executeProcessor(processorDesc, fileDescriptor);
+        return executeProcessor(processorDesc, fileMetadata);
     } else {
         throw new Error('Unsupported content ' + key);
     }

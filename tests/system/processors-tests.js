@@ -5,6 +5,7 @@ var when = require('when');
 var uuid = require('node-uuid');
 var path = require('path');
 var tmp = require('tmp');
+var fs = require('fs');
 var log4js = require('log4js');
 var processors = require("./../../service/processors");
 
@@ -43,6 +44,7 @@ describe('processors tests', function() {
 
     describe('processFile', function() {
         var processorDescs;
+        var customLogAppender;
 
         before(function(done) {
             processors.init(path.join(__dirname, 'test-processors')).done(function onOk(descriptors) {
@@ -53,10 +55,15 @@ describe('processors tests', function() {
             }, function onError(err) {
                 assert.fail(err, null, 'Failed to initialize processors module');
             });
+            log4js.addAppender(function(loggingEvent) {
+                if (customLogAppender) {
+                    customLogAppender(loggingEvent);
+                }
+            });
         });
 
         beforeEach(function() {
-            log4js.clearAppenders();
+            customLogAppender = null;
         });
 
         it('always-error', function() {
@@ -78,7 +85,7 @@ describe('processors tests', function() {
         it('with-logging', function(done) {
             var tmpFile = tmp.fileSync();
             var fileDesc = {'metric': 'with-logging', 'category': 'with-logging', path: tmpFile.name};
-            log4js.addAppender(function(loggingEvent) {
+            customLogAppender = function(loggingEvent) {
                 var data = loggingEvent.data;
                 for (var prop in data) {
                     if (data.hasOwnProperty(prop)) {
@@ -88,7 +95,7 @@ describe('processors tests', function() {
                         }
                     }
                 }
-            });
+            };
             var notifier = processors.processFile(fileDesc);
             notifier.on('end', function(err) {
                 if (err) {
@@ -114,8 +121,8 @@ describe('processors tests', function() {
                 }
             });
             notifier.on('error', function(err) {
-                // the opening [ is not closed due to error, therefore JSON parser reports an error. It will be followed by end event
-                // with error having result code on it
+                // the opening [ is not closed due to error, therefore JSON parser reports an error. It will be
+                // followed by end event with error having result code on it
                 assert(err.message.indexOf('Parser has expected a value') !== -1, 'Expected "Parser has expected a value" error');
                 errorEventOk = true;
             });
@@ -143,8 +150,112 @@ describe('processors tests', function() {
             });
         });
 
-        afterEach(function(){
-            log4js.clearAppenders();
+        it('produce-two-objects', function(done) {
+            var tmpFile = tmp.fileSync();
+            fs.writeSync(tmpFile.fd, 'send me JSON objects');
+            fs.closeSync(tmpFile.fd);
+            var fileDesc = {'metric': 'produce-two-objects-metric', 'category': 'produce-two-objects-category', path: tmpFile.name};
+            var notifier = processors.processFile(fileDesc);
+            var dataSeen = 0;
+            notifier.on('end', function(err) {
+                assert.strictEqual(dataSeen, 2, '2x data was expected to be seen');
+                if (err) {
+                    assert.fail(null, null, 'Unexpected error');
+                } else {
+                    done();
+                }
+            });
+            // data is JSON object
+            notifier.on('data', function(data) {
+                dataSeen++;
+                assert.strictEqual(data.metric, 'produce-two-objects-metric' + dataSeen, 'Expected correct metric value');
+                assert.strictEqual(data.category, 'produce-two-objects-category' + dataSeen, 'Expected correct category value');
+            });
+        });
+
+        it('produce-many-objects', function(done) {
+            var tmpFile = tmp.fileSync();
+            fs.writeSync(tmpFile.fd, 'send me JSON objects');
+            fs.closeSync(tmpFile.fd);
+            var fileDesc = {'metric': 'produce-many-objects-metric', 'category': 'produce-many-objects-category', path: tmpFile.name};
+            var notifier = processors.processFile(fileDesc);
+            var dataSeen = 0;
+            notifier.on('end', function(err) {
+                assert.strictEqual(dataSeen, 1000, '1000x data was expected to be seen');
+                if (err) {
+                    assert.fail(null, null, 'Unexpected error');
+                } else {
+                    done();
+                }
+            });
+            // data is JSON object
+            notifier.on('data', function(data) {
+                dataSeen++;
+                assert.strictEqual(data.metric, 'produce-many-objects-metric' + dataSeen, 'Expected correct metric value');
+                assert.strictEqual(data.category, 'produce-many-objects-category' + dataSeen, 'Expected correct category value');
+            });
+        });
+
+        it('error in data handler', function(done) {
+            // due to error in 'data' handler there will be only one 'data' event fired, followed by 'end' event
+            var tmpFile = tmp.fileSync();
+            fs.writeSync(tmpFile.fd, 'send me JSON objects');
+            fs.closeSync(tmpFile.fd);
+            var fileDesc = {'metric': 'produce-two-objects-metric', 'category': 'produce-two-objects-category', path: tmpFile.name};
+            var notifier = processors.processFile(fileDesc);
+            var dataSeen = 0;
+            var errorSeen;
+            notifier.on('end', function(err) {
+                assert.strictEqual(dataSeen, 1, '1x data was expected to be seen');
+                if (!err) {
+                    assert.fail(null, null, 'Error was expected in end event');
+                } else {
+                    done();
+                }
+            });
+            // data is JSON object
+            notifier.on('data', function(data) {
+                dataSeen++;
+                throw new Error('test error in data handler');
+            });
+            notifier.on('error', function(err) {
+                errorSeen = true;
+                assert(err.message.indexOf('test error in data handler') !== -1, 'Expected "test error in data handler" error');
+            });
+        });
+
+        it('produce-invalid-objects', function(done) {
+            // due to error in 'data' handler there will be only one 'data' event fired, followed by 'end' event
+            var tmpFile = tmp.fileSync();
+            fs.writeSync(tmpFile.fd, 'send me JSON objects');
+            fs.closeSync(tmpFile.fd);
+            var fileDesc = {'metric': 'produce-invalid-objects-metric', 'category': 'produce-invalid-objects-category', path: tmpFile.name};
+            var notifier = processors.processFile(fileDesc);
+            var dataSeen = 0;
+            var errorSeen;
+            notifier.on('end', function(err) {
+                assert.strictEqual(dataSeen, 1, '1x data was expected to be seen');
+                if (!err) {
+                    assert.fail(null, null, 'Error was expected in end event');
+                } else {
+                    done();
+                }
+            });
+            // data is JSON object
+            notifier.on('data', function(data) {
+                // should be invoked only 1x
+                dataSeen++;
+                assert.strictEqual(data.metric, 'produce-invalid-objects-metric' + dataSeen, 'Expected correct metric value');
+                assert.strictEqual(data.category, 'produce-invalid-objects-category' + dataSeen, 'Expected correct category value');
+            });
+            notifier.on('error', function(err) {
+                errorSeen = true;
+                assert(err.message.indexOf('expected an object key') !== -1, 'Expected "expected an object key error');
+            });
+        });
+
+        afterEach(function() {
+            customLogAppender = null;
         });
 
         function findProcessorDesc(processorName) {

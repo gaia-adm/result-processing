@@ -1,0 +1,5 @@
+{
+  "name": "produce-invalid-objects",
+  "command": "node processor.js",
+  "consumes" : [{"metric": "produce-invalid-objects-metric", "category": "produce-invalid-objects-category"}]
+}

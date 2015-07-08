@@ -49,13 +49,14 @@ function msgConsumer(msg, ackControl) {
     var contentStr = msg.content.toString();
     logger.debug(" [x] Received '%s'", contentStr);
     // process file
-    var fileDescriptor = JSON.parse(contentStr);
-    var notifier = processors.processFile(fileDescriptor);
+    var fileMetadata = JSON.parse(contentStr);
+    var authorization = msg.properties.headers.authorization;
+    var notifier = processors.processFile(fileMetadata);
     var ackResponse = false;
     // handle new processed data
     var dataArr = [];
     function sendData(dataToSend, end) {
-        metricsGateway.send(fileDescriptor.authorization, dataToSend, function(err) {
+        metricsGateway.send(authorization, dataToSend, function(err) {
             if (err) {
                 logger.error(err.stack);
                 logger.error(new VError(err, 'Failed to send metrics to metrics-gateway-service'));
@@ -72,7 +73,7 @@ function msgConsumer(msg, ackControl) {
             } else if (end && !ackResponse) {
                 ackControl.ack();
                 ackResponse = true;
-                unlinkFile(fileDescriptor);
+                unlinkFile(fileMetadata);
             }
         });
     }
@@ -107,7 +108,7 @@ function msgConsumer(msg, ackControl) {
                 ackControl.ack();
                 ackResponse = true;
                 if (!err) {
-                    unlinkFile(fileDescriptor);
+                    unlinkFile(fileMetadata);
                 }
             }
         }
@@ -132,12 +133,12 @@ function msgConsumer(msg, ackControl) {
 /**
  * Unlinks file in file system identified by given file descriptor. File will be deleted once the link count reaches 0.
  *
- * @param fileDescriptor file descriptor containing file path
+ * @param fileMetadata file descriptor containing file path
  */
-function unlinkFile(fileDescriptor) {
-    fs.unlink(fileDescriptor.path, function(err) {
+function unlinkFile(fileMetadata) {
+    fs.unlink(fileMetadata.path, function(err) {
         if (err) {
-            logger.error(err, 'Failed to unlink ' + fileDescriptor.path);
+            logger.error(err, 'Failed to unlink ' + fileMetadata.path);
         }
     });
 }
