@@ -90,7 +90,7 @@ function msgConsumer(msg, ackControl) {
     // handle on data end
     function onEnd(err) {
         logger.debug('End of data');
-        if (dataArr.length >= 0) {
+        if (dataArr.length > 0) {
             // there are still data to send
             var localArr = dataArr;
             dataArr = [];
