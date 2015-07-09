@@ -16,10 +16,15 @@ module.exports = function(grunt) {
                 }
             }
         }, mochaTest: {
+            unit: {
+                options: {
+                    reporter: 'spec', captureFile: 'unit-tests-results.txt'
+                }, src: ['tests/unit/**/*-tests.js']
+            },
             system: {
                 options: {
                     reporter: 'spec', captureFile: 'system-tests-results.txt'
-                }, src: ['tests/system/**/*.js']
+                }, src: ['tests/system/**/*-tests.js']
             }
         }
     });
@@ -28,5 +33,6 @@ module.exports = function(grunt) {
     grunt.loadNpmTasks('grunt-mocha-test');
     grunt.loadNpmTasks('grunt-jsdoc');
 
+    grunt.registerTask('unit', ['mochaTest:unit']);
     grunt.registerTask('system', ['mochaTest:system']);
 };
