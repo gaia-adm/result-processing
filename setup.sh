@@ -15,6 +15,7 @@ function setup_proxy()
 
     if [ $? -eq 0 ];then
        echo "No proxy is necessary"
+       return 0
     else
        echo "Detecting suitable proxy server.."
        for i in "${proxies[@]}"
