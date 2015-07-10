@@ -4,6 +4,9 @@
   "version": "0.0.1",
   "description": "GAIA Result Processing",
   "author": "Jaroslav Libak <jaroslav.libak@hp.com>",
+  "scripts": {
+    "start": "node server.js"
+  },
   "dependencies": {
     "log4js": "0.6.26",
     "request": "2.58.0",
