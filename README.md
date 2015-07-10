@@ -72,7 +72,7 @@ For building image for development purposes, distribution/dev/Dockerfile can be 
 Execute:
 - docker run -d -e AMQ_USER="admin" -e AMQ_PASSWORD="mypass" -v "/tmp:/upload" --link rabbitmq:amqserver --link mgs:metricsgw --name result-processing gaiaadm/result-processing:0.1
 
-Unless at least one processor is available the process will exist immediately. Note that the mount point for uploads must be the same in both result upload service and result processing service docker image. For development purposes usage of /tmp is sufficient. For production it needs to be NFSv4 volume. Linking requires knowledge of container name/id we are linking to (i.e "mgs", "rabbitmq" in example).
+Unless at least one processor is available the process will exit immediately. Note that the mount point for uploads must be the same in both result upload service and result processing service docker image. For development purposes usage of /tmp is sufficient. For production it needs to be NFSv4 volume. Linking requires knowledge of container name/id we are linking to (i.e "mgs", "rabbitmq" in example).
 
 ## Known issues
 
