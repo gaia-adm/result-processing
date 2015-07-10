@@ -17,9 +17,8 @@ var logger = log4js.getLogger('metrics_gateway.js');
  * @returns {string}
  */
 function getSendUri() {
-    var host = process.env.METRICSGW_HOST || 'metricsgw';
-    var port = process.env.METRICSGW_PORT || 9002;
-    return 'http://' + host + ':' + port + '/mgs/rest/v1/gateway/publish';
+    var port = process.env.MSGW_PORT || 8080;
+    return 'http://metricsgw:' + port + '/mgs/rest/v1/gateway/publish';
 }
 
 /**
