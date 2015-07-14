@@ -159,8 +159,8 @@ function onLogFromChild(processorDesc, str) {
 
 /**
  * Converts file descriptor properties to environment variables object that can be used for process execution. We use
- * environment variables instead of process arguments since for program it may not be easy to read the arguments
- * for example in case of Java - one has to use -D to pass arguments to Java app. Its much easier to access process
+ * environment variables instead of process arguments since for program it may not be easy to read the arguments - one has
+ * to use specialized argument parsing libraries which may be buggy or work differently. Its much easier to access process
  * environment variables. Environment variables will be prefixed with p_. String case is preserved.
  *
  * @param fileMetadata
