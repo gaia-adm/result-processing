@@ -70,7 +70,7 @@ describe('processors tests', function() {
             var tmpFile = tmp.fileSync();
             // since the processor returned 1 during test execution in init(), it is not considered to be functional
             try {
-                processors.processFile({'metric': 'always-error', 'category': 'always-error', path: tmpFile.name});
+                processors.processFile({path: tmpFile.name}, {'metric': 'always-error', 'category': 'always-error'});
                 assert.fail(null, null, 'Expected "Unsupported content" error');
             } catch (err) {
                 assert(err.message.indexOf('Unsupported content') !== -1, 'Expected "Unsupported content" error');
@@ -84,7 +84,7 @@ describe('processors tests', function() {
 
         it('with-logging', function(done) {
             var tmpFile = tmp.fileSync();
-            var fileDesc = {'metric': 'with-logging', 'category': 'with-logging', path: tmpFile.name};
+            var fileDesc = {'metric': 'with-logging', 'category': 'with-logging'};
             customLogAppender = function(loggingEvent) {
                 var data = loggingEvent.data;
                 for (var prop in data) {
@@ -96,7 +96,7 @@ describe('processors tests', function() {
                     }
                 }
             };
-            var notifier = processors.processFile(fileDesc);
+            var notifier = processors.processFile({path: tmpFile.name}, fileDesc);
             notifier.on('end', function(err) {
                 if (err) {
                     assert.fail(err, null, 'No error was expected');
@@ -106,8 +106,8 @@ describe('processors tests', function() {
 
         it('processing-error', function(done) {
             var tmpFile = tmp.fileSync();
-            var fileDesc = {'metric': 'processing-error', 'category': 'processing-error', path: tmpFile.name};
-            var notifier = processors.processFile(fileDesc);
+            var fileDesc = {'metric': 'processing-error', 'category': 'processing-error'};
+            var notifier = processors.processFile({path: tmpFile.name}, fileDesc);
             var errorEventOk;
             notifier.on('end', function(err) {
                 if (!errorEventOk) {
@@ -132,8 +132,8 @@ describe('processors tests', function() {
             // processor descriptor uses unique values for metric, category, processor name
             // processor returns empty array therefore no data event will be emited
             var tmpFile = tmp.fileSync();
-            var fileDesc = {'metric': 'unique-names2', 'category': 'unique-names3', path: tmpFile.name};
-            var notifier = processors.processFile(fileDesc);
+            var fileDesc = {'metric': 'unique-names2', 'category': 'unique-names3'};
+            var notifier = processors.processFile({path: tmpFile.name}, fileDesc);
             var dataSeen;
             notifier.on('end', function(err) {
                 if (dataSeen) {
@@ -154,8 +154,8 @@ describe('processors tests', function() {
             var tmpFile = tmp.fileSync();
             fs.writeSync(tmpFile.fd, 'send me JSON objects');
             fs.closeSync(tmpFile.fd);
-            var fileDesc = {'metric': 'produce-two-objects-metric', 'category': 'produce-two-objects-category', path: tmpFile.name};
-            var notifier = processors.processFile(fileDesc);
+            var fileDesc = {'metric': 'produce-two-objects-metric', 'category': 'produce-two-objects-category'};
+            var notifier = processors.processFile({path: tmpFile.name}, fileDesc);
             var dataSeen = 0;
             notifier.on('end', function(err) {
                 assert.strictEqual(dataSeen, 2, '2x data was expected to be seen');
@@ -177,8 +177,8 @@ describe('processors tests', function() {
             var tmpFile = tmp.fileSync();
             fs.writeSync(tmpFile.fd, 'send me JSON objects');
             fs.closeSync(tmpFile.fd);
-            var fileDesc = {'metric': 'produce-many-objects-metric', 'category': 'produce-many-objects-category', path: tmpFile.name};
-            var notifier = processors.processFile(fileDesc);
+            var fileDesc = {'metric': 'produce-many-objects-metric', 'category': 'produce-many-objects-category'};
+            var notifier = processors.processFile({path: tmpFile.name}, fileDesc);
             var dataSeen = 0;
             notifier.on('end', function(err) {
                 assert.strictEqual(dataSeen, 1000, '1000x data was expected to be seen');
@@ -201,8 +201,8 @@ describe('processors tests', function() {
             var tmpFile = tmp.fileSync();
             fs.writeSync(tmpFile.fd, 'send me JSON objects');
             fs.closeSync(tmpFile.fd);
-            var fileDesc = {'metric': 'produce-two-objects-metric', 'category': 'produce-two-objects-category', path: tmpFile.name};
-            var notifier = processors.processFile(fileDesc);
+            var fileDesc = {'metric': 'produce-two-objects-metric', 'category': 'produce-two-objects-category'};
+            var notifier = processors.processFile({path: tmpFile.name}, fileDesc);
             var dataSeen = 0;
             var errorSeen;
             notifier.on('end', function(err) {
@@ -229,8 +229,8 @@ describe('processors tests', function() {
             var tmpFile = tmp.fileSync();
             fs.writeSync(tmpFile.fd, 'send me JSON objects');
             fs.closeSync(tmpFile.fd);
-            var fileDesc = {'metric': 'produce-invalid-objects-metric', 'category': 'produce-invalid-objects-category', path: tmpFile.name};
-            var notifier = processors.processFile(fileDesc);
+            var fileDesc = {'metric': 'produce-invalid-objects-metric', 'category': 'produce-invalid-objects-category'};
+            var notifier = processors.processFile({path: tmpFile.name}, fileDesc);
             var dataSeen = 0;
             var errorSeen;
             notifier.on('end', function(err) {

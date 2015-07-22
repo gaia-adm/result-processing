@@ -107,7 +107,8 @@ describe('manager tests', function() {
         it('no data, end', function(done) {
             var msgConsumer;
             var tmpFile = tmp.fileSync();
-            var fileMetadata = {'metric': 'test-processor-metric', 'category': 'test-processor-category', path: tmpFile.name};
+            var processingMetadata = {accessToken: 'authToken', path: tmpFile.name};
+            var contentMetadata = {'metric': 'test-processor-metric', 'category': 'test-processor-category'};
             var processFileCalled = 0;
             // setup stubs
             processorsStub.init.returns(when.resolve(processorDescs));
@@ -115,9 +116,10 @@ describe('manager tests', function() {
             // setup mocks
             fsMock.expects('unlink').once().yields();
             processorsStub.processFile.restore();
-            processors.processFile = function(paramMetadata) {
+            processors.processFile = function(paramProcessingMetadata, paramContentMetadata) {
                 processFileCalled++;
-                assert.deepEqual(paramMetadata, fileMetadata);
+                assert.deepEqual(paramProcessingMetadata, processingMetadata);
+                assert.deepEqual(paramContentMetadata, contentMetadata);
                 var eventEmitter = new events.EventEmitter();
                 // generate events for test
                 setTimeout(function() {
@@ -142,7 +144,7 @@ describe('manager tests', function() {
                 msgConsumer = notificationStub.initAmq.firstCall.args[1];
                 // send message to msgConsumer
                 setTimeout(function() {
-                    var msg = createMockMessage('authToken', fileMetadata);
+                    var msg = createMockMessage(processingMetadata, contentMetadata);
                     msgConsumer(msg, ackControl);
                 }, 1);
             }, function onError(err) {
@@ -153,7 +155,8 @@ describe('manager tests', function() {
         it('no data, end with error', function(done) {
             var msgConsumer;
             var tmpFile = tmp.fileSync();
-            var fileMetadata = {'metric': 'test-processor-metric', 'category': 'test-processor-category', path: tmpFile.name};
+            var processingMetadata = {accessToken: 'authToken', path: tmpFile.name};
+            var contentMetadata = {'metric': 'test-processor-metric', 'category': 'test-processor-category'};
             var processFileCalled = 0;
             // setup stubs
             processorsStub.init.returns(when.resolve(processorDescs));
@@ -161,9 +164,10 @@ describe('manager tests', function() {
             // setup mocks
             fsMock.expects('unlink').never();
             processorsStub.processFile.restore();
-            processors.processFile = function(paramMetadata) {
+            processors.processFile = function(paramProcessingMetadata, paramContentMetadata) {
                 processFileCalled++;
-                assert.deepEqual(paramMetadata, fileMetadata);
+                assert.deepEqual(paramProcessingMetadata, processingMetadata);
+                assert.deepEqual(paramContentMetadata, contentMetadata);
                 var eventEmitter = new events.EventEmitter();
                 // generate events for test
                 setTimeout(function() {
@@ -188,7 +192,7 @@ describe('manager tests', function() {
                 msgConsumer = notificationStub.initAmq.firstCall.args[1];
                 // send message to msgConsumer
                 setTimeout(function() {
-                    var msg = createMockMessage('authToken', fileMetadata);
+                    var msg = createMockMessage(processingMetadata, contentMetadata);
                     msgConsumer(msg, ackControl);
                 }, 1);
             }, function onError(err) {
@@ -199,7 +203,8 @@ describe('manager tests', function() {
         it('1x data with batch size 1, end', function(done) {
             var msgConsumer;
             var tmpFile = tmp.fileSync();
-            var fileMetadata = {'metric': 'test-processor-metric', 'category': 'test-processor-category', path: tmpFile.name};
+            var processingMetadata = {accessToken: 'authToken', path: tmpFile.name};
+            var contentMetadata = {'metric': 'test-processor-metric', 'category': 'test-processor-category'};
             var data = {some: 'data'};
             var processFileCalled = 0;
             process.env.METRICS_BATCH_SIZE = 1;
@@ -209,9 +214,10 @@ describe('manager tests', function() {
             // setup mocks
             fsMock.expects('unlink').once().yields();
             processorsStub.processFile.restore();
-            processors.processFile = function(paramMetadata) {
+            processors.processFile = function(paramProcessingMetadata, paramContentMetadata) {
                 processFileCalled++;
-                assert.deepEqual(paramMetadata, fileMetadata);
+                assert.deepEqual(paramProcessingMetadata, processingMetadata);
+                assert.deepEqual(paramContentMetadata, contentMetadata);
                 var eventEmitter = new events.EventEmitter();
                 // generate events for test
                 setTimeout(function() {
@@ -222,7 +228,7 @@ describe('manager tests', function() {
             };
             metricsGatewayStub.send.restore();
             var metricsGatewayMock = sinon.mock(metricsGateway);
-            metricsGatewayMock.expects('send').once().withArgs('authToken', sinon.match([data])).yields();
+            metricsGatewayMock.expects('send').once().withArgs(processingMetadata, sinon.match([data])).yields();
             function onAck() {
                 setTimeout(function() {
                     assert.strictEqual(processFileCalled, 1, 'Expected processFile to be called');
@@ -241,7 +247,7 @@ describe('manager tests', function() {
                 msgConsumer = notificationStub.initAmq.firstCall.args[1];
                 // send message to msgConsumer
                 setTimeout(function() {
-                    var msg = createMockMessage('authToken', fileMetadata);
+                    var msg = createMockMessage(processingMetadata, contentMetadata);
                     msgConsumer(msg, ackControl);
                 }, 1);
             }, function onError(err) {
@@ -252,7 +258,8 @@ describe('manager tests', function() {
         it('1x data with batch size 1, send error, end with error', function(done) {
             var msgConsumer;
             var tmpFile = tmp.fileSync();
-            var fileMetadata = {'metric': 'test-processor-metric', 'category': 'test-processor-category', path: tmpFile.name};
+            var processingMetadata = {accessToken: 'authToken', path: tmpFile.name};
+            var contentMetadata = {'metric': 'test-processor-metric', 'category': 'test-processor-category'};
             var data = {some: 'data'};
             var processFileCalled = 0;
             process.env.METRICS_BATCH_SIZE = 1;
@@ -265,9 +272,10 @@ describe('manager tests', function() {
             eventEmitter.stop = sinon.mock();
             eventEmitter.stop.once();
             processorsStub.processFile.restore();
-            processors.processFile = function(paramMetadata) {
+            processors.processFile = function(paramProcessingMetadata, paramContentMetadata) {
                 processFileCalled++;
-                assert.deepEqual(paramMetadata, fileMetadata);
+                assert.deepEqual(paramProcessingMetadata, processingMetadata);
+                assert.deepEqual(paramContentMetadata, contentMetadata);
                 // generate events for test
                 setTimeout(function() {
                     eventEmitter.emit('data', data);
@@ -277,7 +285,7 @@ describe('manager tests', function() {
             };
             metricsGatewayStub.send.restore();
             var metricsGatewayMock = sinon.mock(metricsGateway);
-            metricsGatewayMock.expects('send').once().withArgs('authToken', sinon.match([data])).yields(new Error('Test error'));
+            metricsGatewayMock.expects('send').once().withArgs(processingMetadata, sinon.match([data])).yields(new Error('Test error'));
             function onAck() {
                 setTimeout(function() {
                     assert.strictEqual(processFileCalled, 1, 'Expected processFile to be called');
@@ -297,7 +305,7 @@ describe('manager tests', function() {
                 msgConsumer = notificationStub.initAmq.firstCall.args[1];
                 // send message to msgConsumer
                 setTimeout(function() {
-                    var msg = createMockMessage('authToken', fileMetadata);
+                    var msg = createMockMessage(processingMetadata, contentMetadata);
                     msgConsumer(msg, ackControl);
                 }, 1);
             }, function onError(err) {
@@ -308,7 +316,8 @@ describe('manager tests', function() {
         it('1x data with batch size 1, end with error', function(done) {
             var msgConsumer;
             var tmpFile = tmp.fileSync();
-            var fileMetadata = {'metric': 'test-processor-metric', 'category': 'test-processor-category', path: tmpFile.name};
+            var processingMetadata = {accessToken: 'authToken', path: tmpFile.name};
+            var contentMetadata = {'metric': 'test-processor-metric', 'category': 'test-processor-category'};
             var data = {some: 'data'};
             var processFileCalled = 0;
             process.env.METRICS_BATCH_SIZE = 1;
@@ -318,9 +327,10 @@ describe('manager tests', function() {
             // setup mocks
             fsMock.expects('unlink').never();
             processorsStub.processFile.restore();
-            processors.processFile = function(paramMetadata) {
+            processors.processFile = function(paramProcessingMetadata, paramContentMetadata) {
                 processFileCalled++;
-                assert.deepEqual(paramMetadata, fileMetadata);
+                assert.deepEqual(paramProcessingMetadata, processingMetadata);
+                assert.deepEqual(paramContentMetadata, contentMetadata);
                 var eventEmitter = new events.EventEmitter();
                 // generate events for test
                 setTimeout(function() {
@@ -331,7 +341,7 @@ describe('manager tests', function() {
             };
             metricsGatewayStub.send.restore();
             var metricsGatewayMock = sinon.mock(metricsGateway);
-            metricsGatewayMock.expects('send').once().withArgs('authToken', sinon.match([data])).yields();
+            metricsGatewayMock.expects('send').once().withArgs(processingMetadata, sinon.match([data])).yields();
             function onAck() {
                 setTimeout(function() {
                     assert.strictEqual(processFileCalled, 1, 'Expected processFile to be called');
@@ -350,7 +360,7 @@ describe('manager tests', function() {
                 msgConsumer = notificationStub.initAmq.firstCall.args[1];
                 // send message to msgConsumer
                 setTimeout(function() {
-                    var msg = createMockMessage('authToken', fileMetadata);
+                    var msg = createMockMessage(processingMetadata, contentMetadata);
                     msgConsumer(msg, ackControl);
                 }, 1);
             }, function onError(err) {
@@ -361,7 +371,8 @@ describe('manager tests', function() {
         it('1x data with batch size 1, parse error, end with error', function(done) {
             var msgConsumer;
             var tmpFile = tmp.fileSync();
-            var fileMetadata = {'metric': 'test-processor-metric', 'category': 'test-processor-category', path: tmpFile.name};
+            var processingMetadata = {accessToken: 'authToken', path: tmpFile.name};
+            var contentMetadata = {'metric': 'test-processor-metric', 'category': 'test-processor-category'};
             var data = {some: 'data'};
             var processFileCalled = 0;
             process.env.METRICS_BATCH_SIZE = 1;
@@ -371,9 +382,10 @@ describe('manager tests', function() {
             // setup mocks
             fsMock.expects('unlink').never();
             processorsStub.processFile.restore();
-            processors.processFile = function(paramMetadata) {
+            processors.processFile = function(paramProcessingMetadata, paramContentMetadata) {
                 processFileCalled++;
-                assert.deepEqual(paramMetadata, fileMetadata);
+                assert.deepEqual(paramProcessingMetadata, processingMetadata);
+                assert.deepEqual(paramContentMetadata, contentMetadata);
                 var eventEmitter = new events.EventEmitter();
                 // generate events for test
                 setTimeout(function() {
@@ -385,7 +397,7 @@ describe('manager tests', function() {
             };
             metricsGatewayStub.send.restore();
             var metricsGatewayMock = sinon.mock(metricsGateway);
-            metricsGatewayMock.expects('send').once().withArgs('authToken', sinon.match([data])).yields();
+            metricsGatewayMock.expects('send').once().withArgs(processingMetadata, sinon.match([data])).yields();
             function onAck() {
                 setTimeout(function() {
                     assert.strictEqual(processFileCalled, 1, 'Expected processFile to be called');
@@ -404,7 +416,7 @@ describe('manager tests', function() {
                 msgConsumer = notificationStub.initAmq.firstCall.args[1];
                 // send message to msgConsumer
                 setTimeout(function() {
-                    var msg = createMockMessage('authToken', fileMetadata);
+                    var msg = createMockMessage(processingMetadata, contentMetadata);
                     msgConsumer(msg, ackControl);
                 }, 1);
             }, function onError(err) {
@@ -415,7 +427,8 @@ describe('manager tests', function() {
         it('1x data with batch size 10, end', function(done) {
             var msgConsumer;
             var tmpFile = tmp.fileSync();
-            var fileMetadata = {'metric': 'test-processor-metric', 'category': 'test-processor-category', path: tmpFile.name};
+            var processingMetadata = {accessToken: 'authToken', path: tmpFile.name};
+            var contentMetadata = {'metric': 'test-processor-metric', 'category': 'test-processor-category'};
             var data = {some: 'data'};
             var processFileCalled = 0;
             process.env.METRICS_BATCH_SIZE = 10;
@@ -425,9 +438,10 @@ describe('manager tests', function() {
             // setup mocks
             fsMock.expects('unlink').once().yields();
             processorsStub.processFile.restore();
-            processors.processFile = function(paramMetadata) {
+            processors.processFile = function(paramProcessingMetadata, paramContentMetadata) {
                 processFileCalled++;
-                assert.deepEqual(paramMetadata, fileMetadata);
+                assert.deepEqual(paramProcessingMetadata, processingMetadata);
+                assert.deepEqual(paramContentMetadata, contentMetadata);
                 var eventEmitter = new events.EventEmitter();
                 // generate events for test
                 setTimeout(function() {
@@ -438,7 +452,7 @@ describe('manager tests', function() {
             };
             metricsGatewayStub.send.restore();
             var metricsGatewayMock = sinon.mock(metricsGateway);
-            metricsGatewayMock.expects('send').once().withArgs('authToken', sinon.match([data])).yields();
+            metricsGatewayMock.expects('send').once().withArgs(processingMetadata, sinon.match([data])).yields();
             function onAck() {
                 setTimeout(function() {
                     assert.strictEqual(processFileCalled, 1, 'Expected processFile to be called');
@@ -457,7 +471,7 @@ describe('manager tests', function() {
                 msgConsumer = notificationStub.initAmq.firstCall.args[1];
                 // send message to msgConsumer
                 setTimeout(function() {
-                    var msg = createMockMessage('authToken', fileMetadata);
+                    var msg = createMockMessage(processingMetadata, contentMetadata);
                     msgConsumer(msg, ackControl);
                 }, 1);
             }, function onError(err) {
@@ -468,7 +482,8 @@ describe('manager tests', function() {
         it('2x data with batch size 2, end', function(done) {
             var msgConsumer;
             var tmpFile = tmp.fileSync();
-            var fileMetadata = {'metric': 'test-processor-metric', 'category': 'test-processor-category', path: tmpFile.name};
+            var processingMetadata = {accessToken: 'authToken', path: tmpFile.name};
+            var contentMetadata = {'metric': 'test-processor-metric', 'category': 'test-processor-category'};
             var data1 = {some1: 'data1'};
             var data2 = {some2: 'data2'};
             var processFileCalled = 0;
@@ -479,9 +494,10 @@ describe('manager tests', function() {
             // setup mocks
             fsMock.expects('unlink').once().yields();
             processorsStub.processFile.restore();
-            processors.processFile = function(paramMetadata) {
+            processors.processFile = function(paramProcessingMetadata, paramContentMetadata) {
                 processFileCalled++;
-                assert.deepEqual(paramMetadata, fileMetadata);
+                assert.deepEqual(paramProcessingMetadata, processingMetadata);
+                assert.deepEqual(paramContentMetadata, contentMetadata);
                 var eventEmitter = new events.EventEmitter();
                 // generate events for test
                 setTimeout(function() {
@@ -493,7 +509,7 @@ describe('manager tests', function() {
             };
             metricsGatewayStub.send.restore();
             var metricsGatewayMock = sinon.mock(metricsGateway);
-            metricsGatewayMock.expects('send').once().withArgs('authToken', sinon.match([data1, data2])).yields();
+            metricsGatewayMock.expects('send').once().withArgs(processingMetadata, sinon.match([data1, data2])).yields();
             function onAck() {
                 setTimeout(function() {
                     assert.strictEqual(processFileCalled, 1, 'Expected processFile to be called');
@@ -512,7 +528,7 @@ describe('manager tests', function() {
                 msgConsumer = notificationStub.initAmq.firstCall.args[1];
                 // send message to msgConsumer
                 setTimeout(function() {
-                    var msg = createMockMessage('authToken', fileMetadata);
+                    var msg = createMockMessage(processingMetadata, contentMetadata);
                     msgConsumer(msg, ackControl);
                 }, 1);
             }, function onError(err) {
@@ -523,7 +539,8 @@ describe('manager tests', function() {
         it('3x data with batch size 2, end', function(done) {
             var msgConsumer;
             var tmpFile = tmp.fileSync();
-            var fileMetadata = {'metric': 'test-processor-metric', 'category': 'test-processor-category', path: tmpFile.name};
+            var processingMetadata = {accessToken: 'authToken', path: tmpFile.name};
+            var contentMetadata = {'metric': 'test-processor-metric', 'category': 'test-processor-category'};
             var data1 = {some1: 'data1'};
             var data2 = {some2: 'data2'};
             var data3 = {some3: 'data3'};
@@ -535,9 +552,10 @@ describe('manager tests', function() {
             // setup mocks
             fsMock.expects('unlink').once().yields();
             processorsStub.processFile.restore();
-            processors.processFile = function(paramMetadata) {
+            processors.processFile = function(paramProcessingMetadata, paramContentMetadata) {
                 processFileCalled++;
-                assert.deepEqual(paramMetadata, fileMetadata);
+                assert.deepEqual(paramProcessingMetadata, processingMetadata);
+                assert.deepEqual(paramContentMetadata, contentMetadata);
                 var eventEmitter = new events.EventEmitter();
                 // generate events for test
                 setTimeout(function() {
@@ -555,9 +573,9 @@ describe('manager tests', function() {
                 setTimeout(function() {
                     assert.strictEqual(processFileCalled, 1, 'Expected processFile to be called');
                     metricsGatewayMock.verify();
-                    assert.strictEqual(sendMock.firstCall.args[0], 'authToken');
+                    assert.strictEqual(sendMock.firstCall.args[0], processingMetadata);
                     assert.deepEqual(sendMock.firstCall.args[1], [data1, data2]);
-                    assert.strictEqual(sendMock.secondCall.args[0], 'authToken');
+                    assert.strictEqual(sendMock.secondCall.args[0], processingMetadata);
                     assert.deepEqual(sendMock.secondCall.args[1], [data3]);
                     fsMock.verify();
                     done();
@@ -573,7 +591,7 @@ describe('manager tests', function() {
                 msgConsumer = notificationStub.initAmq.firstCall.args[1];
                 // send message to msgConsumer
                 setTimeout(function() {
-                    var msg = createMockMessage('authToken', fileMetadata);
+                    var msg = createMockMessage(processingMetadata, contentMetadata);
                     msgConsumer(msg, ackControl);
                 }, 1);
             }, function onError(err) {
@@ -584,7 +602,8 @@ describe('manager tests', function() {
         it('4x data with batch size 2, end', function(done) {
             var msgConsumer;
             var tmpFile = tmp.fileSync();
-            var fileMetadata = {'metric': 'test-processor-metric', 'category': 'test-processor-category', path: tmpFile.name};
+            var processingMetadata = {accessToken: 'authToken', path: tmpFile.name};
+            var contentMetadata = {'metric': 'test-processor-metric', 'category': 'test-processor-category'};
             var data1 = {some1: 'data1'};
             var data2 = {some2: 'data2'};
             var data3 = {some3: 'data3'};
@@ -597,9 +616,10 @@ describe('manager tests', function() {
             // setup mocks
             fsMock.expects('unlink').once().yields();
             processorsStub.processFile.restore();
-            processors.processFile = function(paramMetadata) {
+            processors.processFile = function(paramProcessingMetadata, paramContentMetadata) {
                 processFileCalled++;
-                assert.deepEqual(paramMetadata, fileMetadata);
+                assert.deepEqual(paramProcessingMetadata, processingMetadata);
+                assert.deepEqual(paramContentMetadata, contentMetadata);
                 var eventEmitter = new events.EventEmitter();
                 // generate events for test
                 setTimeout(function() {
@@ -618,9 +638,9 @@ describe('manager tests', function() {
                 setTimeout(function() {
                     assert.strictEqual(processFileCalled, 1, 'Expected processFile to be called');
                     metricsGatewayMock.verify();
-                    assert.strictEqual(sendMock.firstCall.args[0], 'authToken');
+                    assert.strictEqual(sendMock.firstCall.args[0], processingMetadata);
                     assert.deepEqual(sendMock.firstCall.args[1], [data1, data2]);
-                    assert.strictEqual(sendMock.secondCall.args[0], 'authToken');
+                    assert.strictEqual(sendMock.secondCall.args[0], processingMetadata);
                     assert.deepEqual(sendMock.secondCall.args[1], [data3, data4]);
                     fsMock.verify();
                     done();
@@ -636,7 +656,7 @@ describe('manager tests', function() {
                 msgConsumer = notificationStub.initAmq.firstCall.args[1];
                 // send message to msgConsumer
                 setTimeout(function() {
-                    var msg = createMockMessage('authToken', fileMetadata);
+                    var msg = createMockMessage(processingMetadata, contentMetadata);
                     msgConsumer(msg, ackControl);
                 }, 1);
             }, function onError(err) {
@@ -644,12 +664,10 @@ describe('manager tests', function() {
             });
         });
 
-        function createMockMessage(authorization, fileMetadata) {
+        function createMockMessage(processingMetadata, fileMetadata) {
             return {
                 properties: {
-                    headers: {
-                        authorization: authorization
-                    }
+                    headers: processingMetadata
                 }, content: new Buffer(JSON.stringify(fileMetadata))
             };
         }

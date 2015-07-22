@@ -12,14 +12,14 @@ describe('metrics-gateway client tests', function() {
 
     describe('invalid metrics-gateway-service', function() {
         afterEach(function() {
-            process.env.METRICSGW_HOST = null;
-            process.env.METRICSGW_PORT = null;
+            process.env.MSGW_HOST = null;
+            process.env.MSGW_PORT = null;
         });
 
         it('send with invalid hostname', function(done) {
-            process.env.METRICSGW_HOST = 'localhost';
-            process.env.METRICSGW_PORT = 32000;
-            metricsGateway.send('accessToken', {some:'data'}, function(err) {
+            process.env.MSGW_HOST = 'localhost';
+            process.env.MSGW_PORT = 32000;
+            metricsGateway.send({accessToken: 'accessToken'}, {some:'data'}, function(err) {
                 assert(err instanceof Error, 'Expected the callback be called with an error');
                 done();
             });
@@ -32,7 +32,7 @@ describe('metrics-gateway client tests', function() {
         var server;
 
         before(function(done) {
-            process.env.METRICSGW_HOST = 'localhost';
+            process.env.MSGW_HOST = 'localhost';
             // start internal express server on random port
             app = express();
             var router = express.Router();
@@ -48,7 +48,7 @@ describe('metrics-gateway client tests', function() {
             app.use(defaultErrorHandler);
             server = http.createServer(app);
             server.listen(0, function () {
-                process.env.METRICSGW_PORT = server.address().port;
+                process.env.MSGW_PORT = server.address().port;
                 done();
             });
         });
@@ -58,7 +58,7 @@ describe('metrics-gateway client tests', function() {
                 res.status(HttpStatus.UNAUTHORIZED); // simulate 401
                 res.send();
             };
-            metricsGateway.send(null, {some: 'data'}, function(err) {
+            metricsGateway.send({accessToken: null}, {some: 'data'}, function(err) {
                 assert.instanceOf(err, Error, 'Expected the callback be called with an error');
                 assert(err.message.indexOf('401') !== -1, 'Expected 401 response');
                 done();
@@ -72,7 +72,7 @@ describe('metrics-gateway client tests', function() {
                 res.status(HttpStatus.CREATED);
                 res.send();
             };
-            metricsGateway.send('access token', {some: 'data'}, function(err) {
+            metricsGateway.send({accessToken: 'access token'}, {some: 'data'}, function(err) {
                 assert.isUndefined(err, 'Expected the callback be called without error');
                 done();
             });
@@ -85,7 +85,7 @@ describe('metrics-gateway client tests', function() {
                 res.status(HttpStatus.CREATED);
                 res.send();
             };
-            metricsGateway.send('access token', [{some1: 'data1'},{some2: 'data2'}], function(err) {
+            metricsGateway.send({accessToken: 'access token'}, [{some1: 'data1'},{some2: 'data2'}], function(err) {
                 assert.isUndefined(err, 'Expected the callback be called without error');
                 done();
             });
@@ -95,7 +95,7 @@ describe('metrics-gateway client tests', function() {
             handler = function() {
                 throw new Error('Test error');
             };
-            metricsGateway.send('access token', {some: 'data'}, function(err) {
+            metricsGateway.send({accessToken: 'access token'}, {some: 'data'}, function(err) {
                 assert.instanceOf(err, Error, 'Expected the callback be called with an error');
                 assert(err.message.indexOf('500') !== -1, 'Expected 500 response');
                 done();
@@ -103,8 +103,8 @@ describe('metrics-gateway client tests', function() {
         });
 
         after(function(done) {
-            process.env.METRICSGW_HOST = null;
-            process.env.METRICSGW_PORT = null;
+            process.env.MSGW_HOST = null;
+            process.env.MSGW_PORT = null;
             server.close(done);
         });
 

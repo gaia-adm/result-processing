@@ -17,18 +17,19 @@ var logger = log4js.getLogger('metrics_gateway.js');
  * @returns {string}
  */
 function getSendUri() {
+    var host = process.env.MSGW_HOST || 'metricsgw';
     var port = process.env.MSGW_PORT || 8080;
-    return 'http://metricsgw:' + port + '/mgs/rest/v1/gateway/publish';
+    return 'http://' + host + ':' + port + '/mgs/rest/v1/gateway/publish';
 }
 
 /**
  * Sends measures/metrics to metrics-gateway-service.
  *
- * @param accessToken OAuth access token
+ * @param processingMetadata object containing accessToken, path, tenantId
  * @param data an object to send or array of objects
  * @param callback callback that will be notified upon success/error
  */
-function send(accessToken, data, callback) {
+function send(processingMetadata, data, callback) {
     if (logger.level.level <= log4js.levels.DEBUG.level) {
         logger.debug('Sending to /mgs/rest/v1/gateway/publish: ' + JSON.stringify(data));
     }
@@ -38,7 +39,7 @@ function send(accessToken, data, callback) {
         uri: getSendUri(), method: 'POST', headers: {
             'content-type': 'application/json'
         }, auth: {
-            sendImmediately: true, bearer: accessToken
+            sendImmediately: true, bearer: processingMetadata.accessToken
         }, body: body
     };
     request(options, function(err, response, body) {

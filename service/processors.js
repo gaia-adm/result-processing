@@ -158,22 +158,19 @@ function onLogFromChild(processorDesc, str) {
 }
 
 /**
- * Converts file descriptor properties to environment variables object that can be used for process execution. We use
+ * Converts content metadata properties to environment variables object that can be used for process execution. We use
  * environment variables instead of process arguments since for program it may not be easy to read the arguments - one has
  * to use specialized argument parsing libraries which may be buggy or work differently. Its much easier to access process
  * environment variables. Environment variables will be prefixed with p_. String case is preserved.
  *
- * @param fileMetadata
+ * @param contentMetadata
  */
-function toEnvParams(fileMetadata) {
-    var ignored = {path: true}; // hide file path from result processor app
+function toEnvParams(contentMetadata) {
     var envParams = {};
-    var keys = Object.keys(fileMetadata);
+    var keys = Object.keys(contentMetadata);
     for (var i = 0; i < keys.length; i++) {
         var key = keys[i];
-        if (!ignored[key]) {
-            envParams['p_' + key] = fileMetadata[key];
-        }
+        envParams['p_' + key] = contentMetadata[key];
     }
     return envParams;
 }
@@ -184,13 +181,14 @@ function toEnvParams(fileMetadata) {
  * JSON objects.
  *
  * @param processorDesc result processor descriptor
- * @param fileMetadata descriptor of file - contains path, contentType, metric, category, name etc.
+ * @param processingMetadata - path, accessToken, tenantId
+ * @param contentMetadata descriptor of content - contentType, metric, category, name etc.
  * @returns {ProcessingNotifier} which allows caller to receive processed data, be informed about end or error
  */
-function executeProcessor(processorDesc, fileMetadata) {
+function executeProcessor(processorDesc, processingMetadata, contentMetadata) {
     logger.debug('Executing processor ' + processorDesc.name);
-    var readStream = fs.createReadStream(fileMetadata.path);
-    var envParams = toEnvParams(fileMetadata);
+    var readStream = fs.createReadStream(processingMetadata.path);
+    var envParams = toEnvParams(contentMetadata);
     var child = childProcess.exec(processorDesc.command, {cwd: processorDesc.path, env: envParams}, function (err) {
         readStream.destroy();
         cleanup();
@@ -248,15 +246,16 @@ function executeProcessor(processorDesc, fileMetadata) {
 /**
  * Processes a file using one of registered result processors.
  *
- * @param fileMetadata describes file - contains path, contentType, metric, category, name etc.
+ * @param processingMetadata - contains path, tenantId, accessToken
+ * @param contentMetadata describes content - contentType, metric, category, name etc.
  * @returns {ProcessingNotifier} which allows caller to receive processed data, be informed about end or error
  */
-function processFile(fileMetadata) {
+function processFile(processingMetadata, contentMetadata) {
     // check if we actually support it
-    var key = getProcessorsMapKey(fileMetadata);
+    var key = getProcessorsMapKey(contentMetadata);
     var processorDesc = processorsMap[key];
     if (processorDesc) {
-        return executeProcessor(processorDesc, fileMetadata);
+        return executeProcessor(processorDesc, processingMetadata, contentMetadata);
     } else {
         throw new Error('Unsupported content ' + key);
     }

@@ -49,14 +49,14 @@ function msgConsumer(msg, ackControl) {
     var contentStr = msg.content.toString();
     logger.debug(" [x] Received '%s'", contentStr);
     // process file
-    var fileMetadata = JSON.parse(contentStr);
-    var authorization = msg.properties.headers.authorization;
-    var notifier = processors.processFile(fileMetadata);
+    var processingMetadata = msg.properties.headers; // path, accessToken, tenantId
+    var contentMetadata = JSON.parse(contentStr);
+    var notifier = processors.processFile(processingMetadata, contentMetadata);
     var ackResponse = false;
     // handle new processed data
     var dataArr = [];
     function sendData(dataToSend, end) {
-        metricsGateway.send(authorization, dataToSend, function(err) {
+        metricsGateway.send(processingMetadata, dataToSend, function(err) {
             if (err) {
                 logger.error(err.stack);
                 logger.error(new VError(err, 'Failed to send metrics to metrics-gateway-service'));
@@ -73,7 +73,7 @@ function msgConsumer(msg, ackControl) {
             } else if (end && !ackResponse) {
                 ackControl.ack();
                 ackResponse = true;
-                unlinkFile(fileMetadata);
+                unlinkFile(processingMetadata.path);
             }
         });
     }
@@ -108,7 +108,7 @@ function msgConsumer(msg, ackControl) {
                 ackControl.ack();
                 ackResponse = true;
                 if (!err) {
-                    unlinkFile(fileMetadata);
+                    unlinkFile(contentMetadata);
                 }
             }
         }
@@ -131,14 +131,14 @@ function msgConsumer(msg, ackControl) {
 }
 
 /**
- * Unlinks file in file system identified by given file descriptor. File will be deleted once the link count reaches 0.
+ * Unlinks file in file system identified by given file path. File will be deleted once the link count reaches 0.
  *
- * @param fileMetadata file descriptor containing file path
+ * @param path file path
  */
-function unlinkFile(fileMetadata) {
-    fs.unlink(fileMetadata.path, function(err) {
+function unlinkFile(path) {
+    fs.unlink(path, function(err) {
         if (err) {
-            logger.error(err, 'Failed to unlink ' + fileMetadata.path);
+            logger.error(err, 'Failed to unlink ' + path);
         }
     });
 }
