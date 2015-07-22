@@ -18,7 +18,7 @@ Result processing component consists of two parts:
 - should support SIGTERM to terminate processing. After SIGTERM is sent, any output produced will be ignored by result processing service
 - must support execution when STDIN is closed immediately, no "p_" parameters are present and exit with 0. This is used by result processing service to verify that the processor can be executed successfully.
 
-Result processors receive parameters as environment variables instead of process arguments as process arguments are platform specific - i.e Java applications would receive arguments using -D parameter while shell script could read arguments directly. Since result processing service is not aware of application specifics, it can't know how to pass arguments to make them accessible in the application.
+Result processors receive parameters as environment variables instead of process arguments since in general its easier to process environment variables than command line arguments where CLI parsing libraries are necessary.
 
 Sample processor-descriptor.json:
 {
