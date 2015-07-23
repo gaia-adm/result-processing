@@ -108,7 +108,7 @@ function msgConsumer(msg, ackControl) {
                 ackControl.ack();
                 ackResponse = true;
                 if (!err) {
-                    unlinkFile(contentMetadata);
+                    unlinkFile(processingMetadata.path);
                 }
             }
         }
