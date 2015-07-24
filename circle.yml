@@ -9,8 +9,10 @@ test:
     - docker run -d -e RABBITMQ_PASS="mypass" --name rabbitmq gaiaadm/rabbitmq; sleep 10
     # run system tests
     - docker run -e AMQ_USER="admin" -e AMQ_PASSWORD="mypass" --link rabbitmq:amqserver --name system-test-runner gaiaadm/result-processing:$BUILD_TAG grunt system
-    - docker cp system-test-runner:/src/unit-tests-results.txt $CIRCLE_TEST_REPORTS
-    - docker cp system-test-runner:/src/system-tests-results.txt $CIRCLE_TEST_REPORTS
+    - docker cp system-test-runner:/src/unit-test-results.xml $CIRCLE_TEST_REPORTS
+    - docker cp system-test-runner:/src/unit-test-results.out $CIRCLE_ARTIFACTS
+    - docker cp system-test-runner:/src/system-test-results.xml $CIRCLE_TEST_REPORTS
+    - docker cp system-test-runner:/src/system-test-results.out $CIRCLE_ARTIFACTS
 deployment:
   hub:
     branch: master
