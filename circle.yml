@@ -6,6 +6,11 @@ dependencies:
     - docker build -f distribution/release/Dockerfile -t gaiaadm/result-processing:$BUILD_TAG .
 test:
   override:
+    - docker run -d -e RABBITMQ_PASS="mypass" --name rabbitmq gaiaadm/rabbitmq; sleep 10
+    # run system tests
+    - docker run -e AMQ_USER="admin" -e AMQ_PASSWORD="mypass" --link rabbitmq:amqserver --name system-test-runner gaiaadm/result-processing:$BUILD_TAG grunt system
+    - docker cp system-test-runner:/src/unit-tests-results.txt $CIRCLE_TEST_REPORTS
+    - docker cp system-test-runner:/src/system-tests-results.txt $CIRCLE_TEST_REPORTS
 deployment:
   hub:
     branch: master
