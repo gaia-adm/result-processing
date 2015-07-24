@@ -1,3 +1,5 @@
+CircleCI build status: [![Circle CI](https://circleci.com/gh/gaia-adm/result-processing.svg?style=svg)](https://circleci.com/gh/gaia-adm/result-processing)
+
 # result-processing
 
 Result processing component consists of two parts:
