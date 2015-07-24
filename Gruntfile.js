@@ -19,7 +19,7 @@ module.exports = function(grunt) {
             unit: {
                 options: {
                     reporter: 'mocha-junit-reporter',
-                    captureFile: 'unit-test-results.out',
+                    captureFile: 'unit-test-results.txt',
                     reporterOptions: {
                         mochaFile: 'unit-test-results.xml'
                     }
@@ -28,7 +28,7 @@ module.exports = function(grunt) {
             system: {
                 options: {
                     reporter: 'mocha-junit-reporter',
-                    captureFile: 'system-test-results.out',
+                    captureFile: 'system-test-results.txt',
                     reporterOptions: {
                         mochaFile: 'system-test-results.xml'
                     }
