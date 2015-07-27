@@ -1,5 +1,0 @@
-{
-  "name": "openweathermap/weather",
-  "command": "node processor.js",
-  "consumes" : [{"metric": "openweathermap", "category": "weather"}]
-}
