@@ -36,7 +36,7 @@ describe('metrics-gateway client tests', function() {
             // start internal express server on random port
             app = express();
             var router = express.Router();
-            router.post('/mgs/rest/v1/gateway/publish', function(req, res) {
+            router.post('/mgs/rest/v1/gateway/event', function(req, res) {
                 if (handler) {
                     handler(req, res);
                 } else {
