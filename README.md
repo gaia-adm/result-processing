@@ -12,7 +12,7 @@ Result processing component consists of two parts:
 - are executed as independent processes (thus eliminating problem with memory leaks)
 - can be implemented in any programing language
 - come with file named "processor-descriptor.json" which defines processor name, program to execute and declaration of what data it is capable of processing
-- receive parameters as environment variables prefixed with "p_". The following environment variables can be expected: "p_metric", "p_category", "p_name", "p_source", "p_timestamp", "p_contentType". Parameters "p_source", "p_timestamp" are optional. "p_contentType" is always present and represents the HTTP Content-Type header value.
+- receive parameters as environment variables prefixed with "p_". The following environment variables can be expected: "p_metric", "p_category", "p_contentType". "p_contentType" represents the HTTP Content-Type header value.
 - receive uploaded file on STDIN. The file can be binary or textual (i.e XML, JSON) and in theory can be quite big. It is not recommended to parse it at once. Processing ends when EOF is received from STDIN.
 - processed results are written to STDOUT in the form of JSON array containing JSON objects. JSON objects must have format expected by metrics-gateway-service ("/mgs/rest/v1/gateway/event"). It is recommended to write JSON objects to STDOUT while processing STDIN.
 - log can be written to STDERR (of all log levels, not just errors). It ends up in result upload service log under processor name.
