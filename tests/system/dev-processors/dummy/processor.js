@@ -24,23 +24,25 @@ process.stdin.on('end', function() {
 });
 
 console.log('[');
-console.log(JSON.stringify({
-    "metric": "defect",
-    "category": "defect",
-    "name": "1592",
-    "source": "agm-919190571",
-    "timestamp": new Date().getTime(),
-    "measurements": [{"name": "severity", "value": 2}, {"name": "time_spent", "value": 60}]
-}));
-for (var i = 0; i < 1000; i++) {
-    console.log(',');
+for (var i = 0; i < 50; i++) {
+    if (i > 0) {
+        console.log(',');
+    }
     console.log(JSON.stringify({
-        "metric": "defect",
-        "category": "defect",
-        "name": "1593",
-        "source": "agm-919190571",
-        "timestamp": new Date().getTime(),
-        "measurements": [{"name": "severity", "value": 3}, {"name": "time_spent", "value": 120}]
+      "event": "general",
+      "time": new Date().toISOString(),
+      "source": {
+        "origin": "notyourbusiness"
+      },
+      "tags": {
+        "tag1": "foo",
+        "tag2": "boo"
+      },
+      "data": {
+        "field1": "value1",
+        "field2": "value2",
+        "field3": 3
+      }
     }));
 }
 console.log(']');

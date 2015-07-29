@@ -19,7 +19,7 @@ var logger = log4js.getLogger('metrics_gateway.js');
 function getSendUri() {
     var host = process.env.MSGW_HOST || 'metricsgw';
     var port = process.env.MSGW_PORT || 8080;
-    return 'http://' + host + ':' + port + '/mgs/rest/v1/gateway/publish';
+    return 'http://' + host + ':' + port + '/mgs/rest/v1/gateway/event';
 }
 
 /**
@@ -31,7 +31,7 @@ function getSendUri() {
  */
 function send(processingMetadata, data, callback) {
     if (logger.level.level <= log4js.levels.DEBUG.level) {
-        logger.debug('Sending to /mgs/rest/v1/gateway/publish: ' + JSON.stringify(data));
+        logger.debug('Sending to /mgs/rest/v1/gateway/event: ' + JSON.stringify(data));
     }
 
     var body = JSON.stringify(Array.isArray(data) ? data : [data]);
