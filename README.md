@@ -23,11 +23,13 @@ Result processing component consists of two parts:
 Result processors receive parameters as environment variables instead of process arguments since in general its easier to process environment variables than command line arguments where CLI parsing libraries are necessary.
 
 Sample processor-descriptor.json:
+```js
 {
   "name": "dummy",
   "command": "node processor.js",
   "consumes" : [{"metric": "dummy", "category": "dummy"}]
 }
+```
 
 Processor name must be unique and represent what kind of data it can process. "consumes" represents the data it can receive and process. Semantics of "metric" and "category" are defined by metrics gateway service. One processor can support processing multiple types of data and multiple content types. Processor debugging can be done by specifying argument to enable program debugging (in Java, Node.js) and have program execution paused until debugger connects.
 
