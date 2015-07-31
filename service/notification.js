@@ -53,29 +53,25 @@ function getAckController(channel, msg) {
 
 /**
  * Creates queue and sets up listening on routing keys determined by processor descriptor. Queue will have name after
- * result processor name.
+ * consumesItem dataType.
  *
  * @param channel AMQ channel
  * @param processorDesc one result processor descriptor
+ * @param consumesItem one item of consumes array
  * @param msgConsumer message consumer
  * @returns promise
  */
-function initQueue(channel, processorDesc, msgConsumer) {
-    var queue = processorDesc.name;
+function initQueue(channel, processorDesc, consumesItem, msgConsumer) {
+    var queue = consumesItem.dataType;
     var ok = channel.assertQueue(queue, {durable: true});
 
     ok = ok.then(function() {
         logger.debug('Asserted queue \'' + queue + '\' into existence');
-        // bind 'result-upload' exchange to our queue using defined routing keys
-        var consumesArr = processorDesc.consumes;
-        var promises = [];
-        consumesArr.forEach(function(consumesItem) {
-            var routingKey = getRoutingKey(consumesItem);
-            promises.push(channel.bindQueue(queue, RESULT_EXCHANGE, routingKey).then(function() {
-                logger.debug('Bound queue \'' + queue + '\' to exchange \'' + RESULT_EXCHANGE + '\' with routing key ' + routingKey);
-            }));
+        // bind 'result-upload' exchange to our queue using routing key
+        var routingKey = consumesItem.dataType;
+        return channel.bindQueue(queue, RESULT_EXCHANGE, routingKey).then(function() {
+            logger.debug('Bound queue \'' + queue + '\' to exchange \'' + RESULT_EXCHANGE + '\' with routing key ' + routingKey);
         });
-        return when.all(promises);
     });
 
     return ok.then(function() {
@@ -98,7 +94,10 @@ function initQueue(channel, processorDesc, msgConsumer) {
 function initQueues(channel, processorDescs, msgConsumer) {
     var promises = [];
     processorDescs.forEach(function(processorDesc) {
-        promises.push(initQueue(channel, processorDesc, msgConsumer));
+        var consumesArr = processorDesc.consumes;
+        consumesArr.forEach(function(consumesItem) {
+            promises.push(initQueue(channel, processorDesc, consumesItem, msgConsumer));
+        });
     });
     return when.all(promises);
 }
@@ -180,10 +179,6 @@ function initAmq(processorDescs, msgConsumer) {
         logger.error(err.stack);
         throw new VError(err, 'Failed to connect to AMQ');
     });
-}
-
-function getRoutingKey(consumesItem) {
-    return consumesItem.dataType;
 }
 
 /**

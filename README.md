@@ -37,7 +37,7 @@ Processor implementations should be located their own Git repositories and have 
 
 ## Result processing service
 
-- connects to RabbitMQ and creates binding from "result-upload" exchange to queues named like result processors based on dataType. Each result processor has its own queue.
+- connects to RabbitMQ and creates binding from "result-upload" exchange to queues named like result processors dataType. Each dataType has its own queue.
 - requires at least one processor to be present, otherwise the service cannot start (since it then cannot connect to RabbitMQ and there is nothing to do)
 - by default processors directory is "processors", can be customized through PROCESSORS_PATH environment variable
 - during startup processors subdirectories are scanned for "processor-descriptor.json" files and found processors are executed without parameters and STDIN ending immediately to verify execution. Processors exiting with non 0 code or failing to execute are ignored.
@@ -85,6 +85,5 @@ Unless at least one processor is available the process will exit immediately. No
   - related to the fact we don't store processor execution state/result
 - currently there is no way for processor to tell the service version of the produced content. All result processors must thus produce data of the same version. Metrics gateway service may support multiple data format versions (i.e v1, v2 on its REST). If case of change we have to update code of all result processors.
   - if needed this could be solved by processor descriptor saying what data it produces on STDOUT and for whom
-- lack of versioning support in processors. New versions could add support for parsing new versions of the same data (dataType) or new types of data (new metrics/categories). Support for versioning would mean processors declaring version for each dataType in "consumes". Then instead of queue per processor name there would be queue per each version of dataType. Result processing service would listen only on queues its processors can handle. Such deployment could have mixed versions of processors. The downside is higher number of queues - one per each dataType key and this results in more processes in RabbitMQ.
 - logging to STDERR always ends up as INFO on result-processing service - can be solved with either using JSON format in order to transport both level and message or just use hardcoded format like "LEVEL,MESSAGE"
 - no support for chaining multiple processors after each other. Celery supports this. We could use more streams than STDOUT and processor descriptor could specify where the stream output should go (i.e metrics-gateway or other processor).
