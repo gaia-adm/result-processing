@@ -183,7 +183,7 @@ function initAmq(processorDescs, msgConsumer) {
 }
 
 function getRoutingKey(consumesItem) {
-    return consumesItem.metric + '/' + consumesItem.category;
+    return consumesItem.dataType;
 }
 
 /**

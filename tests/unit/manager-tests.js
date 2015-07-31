@@ -27,7 +27,7 @@ describe('manager tests', function() {
         processorDescs = [{
           "name": "test-processor",
           "command": "node processor.js",
-          "consumes" : [{"metric": "test-processor-metric", "category": "test-processor-category"}]
+          "consumes" : [{"dataType": "test-processor-metric/test-processor-category"}]
         }];
 
         mockery.enable({warnOnUnregistered: false, useCleanCache: true});
@@ -108,7 +108,7 @@ describe('manager tests', function() {
             var msgConsumer;
             var tmpFile = tmp.fileSync();
             var processingMetadata = {accessToken: 'authToken', path: tmpFile.name};
-            var contentMetadata = {'metric': 'test-processor-metric', 'category': 'test-processor-category'};
+            var contentMetadata = {'dataType': 'test-processor-metric/test-processor-category'};
             var processFileCalled = 0;
             // setup stubs
             processorsStub.init.returns(when.resolve(processorDescs));
@@ -156,7 +156,7 @@ describe('manager tests', function() {
             var msgConsumer;
             var tmpFile = tmp.fileSync();
             var processingMetadata = {accessToken: 'authToken', path: tmpFile.name};
-            var contentMetadata = {'metric': 'test-processor-metric', 'category': 'test-processor-category'};
+            var contentMetadata = {'dataType': 'test-processor-metric/test-processor-category'};
             var processFileCalled = 0;
             // setup stubs
             processorsStub.init.returns(when.resolve(processorDescs));
@@ -204,7 +204,7 @@ describe('manager tests', function() {
             var msgConsumer;
             var tmpFile = tmp.fileSync();
             var processingMetadata = {accessToken: 'authToken', path: tmpFile.name};
-            var contentMetadata = {'metric': 'test-processor-metric', 'category': 'test-processor-category'};
+            var contentMetadata = {'dataType': 'test-processor-metric/test-processor-category'};
             var data = {some: 'data'};
             var processFileCalled = 0;
             process.env.METRICS_BATCH_SIZE = 1;
@@ -259,7 +259,7 @@ describe('manager tests', function() {
             var msgConsumer;
             var tmpFile = tmp.fileSync();
             var processingMetadata = {accessToken: 'authToken', path: tmpFile.name};
-            var contentMetadata = {'metric': 'test-processor-metric', 'category': 'test-processor-category'};
+            var contentMetadata = {'dataType': 'test-processor-metric/test-processor-category'};
             var data = {some: 'data'};
             var processFileCalled = 0;
             process.env.METRICS_BATCH_SIZE = 1;
@@ -317,7 +317,7 @@ describe('manager tests', function() {
             var msgConsumer;
             var tmpFile = tmp.fileSync();
             var processingMetadata = {accessToken: 'authToken', path: tmpFile.name};
-            var contentMetadata = {'metric': 'test-processor-metric', 'category': 'test-processor-category'};
+            var contentMetadata = {'dataType': 'test-processor-metric/test-processor-category'};
             var data = {some: 'data'};
             var processFileCalled = 0;
             process.env.METRICS_BATCH_SIZE = 1;
@@ -372,7 +372,7 @@ describe('manager tests', function() {
             var msgConsumer;
             var tmpFile = tmp.fileSync();
             var processingMetadata = {accessToken: 'authToken', path: tmpFile.name};
-            var contentMetadata = {'metric': 'test-processor-metric', 'category': 'test-processor-category'};
+            var contentMetadata = {'dataType': 'test-processor-metric/test-processor-category'};
             var data = {some: 'data'};
             var processFileCalled = 0;
             process.env.METRICS_BATCH_SIZE = 1;
@@ -428,7 +428,7 @@ describe('manager tests', function() {
             var msgConsumer;
             var tmpFile = tmp.fileSync();
             var processingMetadata = {accessToken: 'authToken', path: tmpFile.name};
-            var contentMetadata = {'metric': 'test-processor-metric', 'category': 'test-processor-category'};
+            var contentMetadata = {'dataType': 'test-processor-metric/test-processor-category'};
             var data = {some: 'data'};
             var processFileCalled = 0;
             process.env.METRICS_BATCH_SIZE = 10;
@@ -483,7 +483,7 @@ describe('manager tests', function() {
             var msgConsumer;
             var tmpFile = tmp.fileSync();
             var processingMetadata = {accessToken: 'authToken', path: tmpFile.name};
-            var contentMetadata = {'metric': 'test-processor-metric', 'category': 'test-processor-category'};
+            var contentMetadata = {'dataType': 'test-processor-metric/test-processor-category'};
             var data1 = {some1: 'data1'};
             var data2 = {some2: 'data2'};
             var processFileCalled = 0;
@@ -540,7 +540,7 @@ describe('manager tests', function() {
             var msgConsumer;
             var tmpFile = tmp.fileSync();
             var processingMetadata = {accessToken: 'authToken', path: tmpFile.name};
-            var contentMetadata = {'metric': 'test-processor-metric', 'category': 'test-processor-category'};
+            var contentMetadata = {'dataType': 'test-processor-metric/test-processor-category'};
             var data1 = {some1: 'data1'};
             var data2 = {some2: 'data2'};
             var data3 = {some3: 'data3'};
@@ -603,7 +603,7 @@ describe('manager tests', function() {
             var msgConsumer;
             var tmpFile = tmp.fileSync();
             var processingMetadata = {accessToken: 'authToken', path: tmpFile.name};
-            var contentMetadata = {'metric': 'test-processor-metric', 'category': 'test-processor-category'};
+            var contentMetadata = {'dataType': 'test-processor-metric/test-processor-category'};
             var data1 = {some1: 'data1'};
             var data2 = {some2: 'data2'};
             var data3 = {some3: 'data3'};

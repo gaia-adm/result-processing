@@ -18,7 +18,7 @@ var util = require('util');
 var logger = log4js.getLogger('processors.js');
 
 /**
- * Map of 'metric/category' key to processor descriptor.
+ * Map of 'dataType' key to processor descriptor.
  */
 var processorsMap = {};
 
@@ -139,7 +139,7 @@ function initProcessorsMap(processorDescs) {
 }
 
 function getProcessorsMapKey(consumesItem) {
-    return consumesItem.metric + '/' + consumesItem.category;
+    return consumesItem.dataType;
 }
 
 /**
@@ -182,7 +182,7 @@ function toEnvParams(contentMetadata) {
  *
  * @param processorDesc result processor descriptor
  * @param processingMetadata - path, accessToken, tenantId
- * @param contentMetadata descriptor of content - contentType, metric, category, name etc.
+ * @param contentMetadata descriptor of content - contentType, dataType etc.
  * @returns {ProcessingNotifier} which allows caller to receive processed data, be informed about end or error
  */
 function executeProcessor(processorDesc, processingMetadata, contentMetadata) {
@@ -247,7 +247,7 @@ function executeProcessor(processorDesc, processingMetadata, contentMetadata) {
  * Processes a file using one of registered result processors.
  *
  * @param processingMetadata - contains path, tenantId, accessToken
- * @param contentMetadata describes content - contentType, metric, category, name etc.
+ * @param contentMetadata describes content - contentType, dataType etc.
  * @returns {ProcessingNotifier} which allows caller to receive processed data, be informed about end or error
  */
 function processFile(processingMetadata, contentMetadata) {

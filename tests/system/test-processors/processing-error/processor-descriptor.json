@@ -1,5 +1,5 @@
 {
   "name": "processing-error",
   "command": "node processor.js",
-  "consumes" : [{"metric": "processing-error", "category": "processing-error"}]
+  "consumes" : [{"dataType": "processing-error/processing-error"}]
 }

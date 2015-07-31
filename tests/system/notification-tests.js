@@ -15,10 +15,10 @@ describe('notification tests', function() {
         this.timeout(5000); // higher timeout than default 2s is needed
         var processorDescs = [{
             'name': 'testProcessor1',
-            'consumes': [{'metric': 'testMetric1', 'category': 'testCategory1'}]
+            'consumes': [{'dataType': 'testMetric1/testCategory1'}]
         }, {
             'name': 'testProcessor2',
-            'consumes': [{'metric': 'testMetric2', 'category': 'testCategory2'}, {'metric': 'testMetric3', 'category': 'testCategory3'}]
+            'consumes': [{'dataType': 'testMetric2/testCategory2'}, {'dataType': 'testMetric3/testCategory3'}]
         }];
         var promise1 = notification.initAmq(processorDescs, function(msg, ackControl) {
             if (msgConsumer) {
@@ -50,13 +50,12 @@ describe('notification tests', function() {
         msgConsumer = function(msg, ackControl) {
             var contentStr = msg.content.toString();
             var fileDescriptor = JSON.parse(contentStr);
-            assert.strictEqual(fileDescriptor.metric, 'testMetric1');
-            assert.strictEqual(fileDescriptor.category, 'testCategory1');
+            assert.strictEqual(fileDescriptor.dataType, 'testMetric1/testCategory1');
             assert.strictEqual(fileDescriptor.name, name);
             ackControl.ack();
             done();
         };
-        send({'metric': 'testMetric1', 'category': 'testCategory1', name: name}, function (err) {
+        send({'dataType': 'testMetric1/testCategory1', name: name}, function (err) {
             if (err) {
                 assert.fail(err, null, 'Failed to send notification');
             }
@@ -70,8 +69,7 @@ describe('notification tests', function() {
         msgConsumer = function(msg, ackControl) {
             var contentStr = msg.content.toString();
             var fileDescriptor = JSON.parse(contentStr);
-            assert.strictEqual(fileDescriptor.metric, 'testMetric1');
-            assert.strictEqual(fileDescriptor.category, 'testCategory1');
+            assert.strictEqual(fileDescriptor.dataType, 'testMetric1/testCategory1');
             assert.strictEqual(fileDescriptor.name, name);
             if (counter++ === 0) {
                 ackControl.nack();
@@ -80,7 +78,7 @@ describe('notification tests', function() {
                 done();
             }
         };
-        send({'metric': 'testMetric1', 'category': 'testCategory1', name: name}, function (err) {
+        send({'dataType': 'testMetric1/testCategory1', name: name}, function (err) {
             if (err) {
                 assert.fail(err, null, 'Failed to send notification');
             }
@@ -92,13 +90,12 @@ describe('notification tests', function() {
         msgConsumer = function(msg, ackControl) {
             var contentStr = msg.content.toString();
             var fileDescriptor = JSON.parse(contentStr);
-            assert.strictEqual(fileDescriptor.metric, 'testMetric2');
-            assert.strictEqual(fileDescriptor.category, 'testCategory2');
+            assert.strictEqual(fileDescriptor.dataType, 'testMetric2/testCategory2');
             assert.strictEqual(fileDescriptor.name, name);
             ackControl.ack();
             done();
         };
-        send({'metric': 'testMetric2', 'category': 'testCategory2', name: name}, function (err) {
+        send({'dataType': 'testMetric2/testCategory2', name: name}, function (err) {
             if (err) {
                 assert.fail(err, null, 'Failed to send notification');
             }
@@ -110,13 +107,12 @@ describe('notification tests', function() {
         msgConsumer = function(msg, ackControl) {
             var contentStr = msg.content.toString();
             var fileDescriptor = JSON.parse(contentStr);
-            assert.strictEqual(fileDescriptor.metric, 'testMetric3');
-            assert.strictEqual(fileDescriptor.category, 'testCategory3');
+            assert.strictEqual(fileDescriptor.dataType, 'testMetric3/testCategory3');
             assert.strictEqual(fileDescriptor.name, name);
             ackControl.ack();
             done();
         };
-        send({'metric': 'testMetric3', 'category': 'testCategory3', name: name}, function (err) {
+        send({'dataType': 'testMetric3/testCategory3', name: name}, function (err) {
             if (err) {
                 assert.fail(err, null, 'Failed to send notification');
             }
@@ -148,16 +144,16 @@ describe('notification tests', function() {
                     '@' + amq_hostname + ':' + amq_port + '?frameMax=0x1000&heartbeat=30';
     }
 
-    function send(fileMetadata, callback) {
+    function send(contentMetadata, callback) {
         if (!amqCh) {
             throw new Error('Notification channel is not ready');
         }
-        amqCh.publish('result-upload', getRoutingKey(fileMetadata), new Buffer(JSON.stringify(fileMetadata)),
+        amqCh.publish('result-upload', getRoutingKey(contentMetadata), new Buffer(JSON.stringify(contentMetadata)),
                 {mandatory: true, persistent: true}, callback);
     }
 
-    function getRoutingKey(fileMetadata) {
-        return fileMetadata.metric + '/' + fileMetadata.category;
+    function getRoutingKey(contentMetadata) {
+        return contentMetadata.dataType;
     }
 
 });

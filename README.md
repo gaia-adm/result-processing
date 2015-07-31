@@ -12,7 +12,7 @@ Result processing component consists of two parts:
 - are executed as independent processes (thus eliminating problem with memory leaks)
 - can be implemented in any programing language
 - come with file named "processor-descriptor.json" which defines processor name, program to execute and declaration of what data it is capable of processing
-- receive parameters as environment variables prefixed with "p_". The following environment variables can be expected: "p_metric", "p_category", "p_contentType". "p_contentType" represents the HTTP Content-Type header value.
+- receive parameters as environment variables prefixed with "p_". The following environment variables can be expected: "p_dataType", "p_contentType". "p_contentType" represents the HTTP Content-Type header value. Custom metadata from data providers will be accessible with prefix "p_c_".
 - receive uploaded file on STDIN. The file can be binary or textual (i.e XML, JSON) and in theory can be quite big. It is not recommended to parse it at once. Processing ends when EOF is received from STDIN.
 - processed results are written to STDOUT in the form of JSON array containing JSON objects. JSON objects must have format expected by metrics-gateway-service ("/mgs/rest/v1/gateway/event"). It is recommended to write JSON objects to STDOUT while processing STDIN.
 - log can be written to STDERR (of all log levels, not just errors). It ends up in result upload service log under processor name.
@@ -27,17 +27,17 @@ Sample processor-descriptor.json:
 {
   "name": "dummy",
   "command": "node processor.js",
-  "consumes" : [{"metric": "dummy", "category": "dummy"}]
+  "consumes" : [{"dataType": "dummy/dummy"}]
 }
 ```
 
-Processor name must be unique and represent what kind of data it can process. "consumes" represents the data it can receive and process. Semantics of "metric" and "category" are defined by metrics gateway service. One processor can support processing multiple types of data and multiple content types. Processor debugging can be done by specifying argument to enable program debugging (in Java, Node.js) and have program execution paused until debugger connects.
+Processor name must be unique and represent what kind of data it can process. "consumes" represents the data it can receive and process. One processor can support processing multiple types of data and multiple content types. Processor debugging can be done by specifying argument to enable program debugging (in Java, Node.js) and have program execution paused until debugger connects.
 
 Processor implementations should be located their own Git repositories and have their own Dockerfiles extending result-processing Dockerfile. For examples see sample-weather processor and processors in "tests/system" which are used in tests. Processor Dockerfile will add the processor to "processors" directory which is empty in the parent Docker image. For development purposes this directory can be mapped to local directory while executing "docker run" and thus avoiding the need to rebuild or restart Docker image.
 
 ## Result processing service
 
-- connects to RabbitMQ and creates binding from "result-upload" exchange to queues named like result processors based on metric/category. Each result processor has its own queue.
+- connects to RabbitMQ and creates binding from "result-upload" exchange to queues named like result processors based on dataType. Each result processor has its own queue.
 - requires at least one processor to be present, otherwise the service cannot start (since it then cannot connect to RabbitMQ and there is nothing to do)
 - by default processors directory is "processors", can be customized through PROCESSORS_PATH environment variable
 - during startup processors subdirectories are scanned for "processor-descriptor.json" files and found processors are executed without parameters and STDIN ending immediately to verify execution. Processors exiting with non 0 code or failing to execute are ignored.
@@ -85,6 +85,6 @@ Unless at least one processor is available the process will exit immediately. No
   - related to the fact we don't store processor execution state/result
 - currently there is no way for processor to tell the service version of the produced content. All result processors must thus produce data of the same version. Metrics gateway service may support multiple data format versions (i.e v1, v2 on its REST). If case of change we have to update code of all result processors.
   - if needed this could be solved by processor descriptor saying what data it produces on STDOUT and for whom
-- lack of versioning support in processors. New versions could add support for parsing new versions of the same data (metric/category) or new types of data (new metrics/categories). Support for versioning would mean processors declaring version for each metric/category in "consumes". Then instead of queue per processor name there would be queue per each version of metric/category. Result processing service would listen only on queues its processors can handle. Such deployment could have mixed versions of processors. The downside is higher number of queues - one per each metric/category key and this results in more processes in RabbitMQ.
+- lack of versioning support in processors. New versions could add support for parsing new versions of the same data (dataType) or new types of data (new metrics/categories). Support for versioning would mean processors declaring version for each dataType in "consumes". Then instead of queue per processor name there would be queue per each version of dataType. Result processing service would listen only on queues its processors can handle. Such deployment could have mixed versions of processors. The downside is higher number of queues - one per each dataType key and this results in more processes in RabbitMQ.
 - logging to STDERR always ends up as INFO on result-processing service - can be solved with either using JSON format in order to transport both level and message or just use hardcoded format like "LEVEL,MESSAGE"
 - no support for chaining multiple processors after each other. Celery supports this. We could use more streams than STDOUT and processor descriptor could specify where the stream output should go (i.e metrics-gateway or other processor).

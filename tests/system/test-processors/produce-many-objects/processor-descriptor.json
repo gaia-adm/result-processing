@@ -1,5 +1,5 @@
 {
   "name": "produce-many-objects",
   "command": "node processor.js",
-  "consumes" : [{"metric": "produce-many-objects-metric", "category": "produce-many-objects-category"}]
+  "consumes" : [{"dataType": "produce-many-objects-metric/produce-many-objects-category"}]
 }
