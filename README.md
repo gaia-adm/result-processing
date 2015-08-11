@@ -55,6 +55,7 @@ Same storage path used by result upload service must be accessible to result pro
 Supported environment parameters:
 - AMQ_USER, AMQ_PASSWORD for authenticating to RabbitMQ. This is temporary until a better way to retrieve credentials by services is available.
 - PROCESSORS_PATH - path where result processors can be found. If not specified, "processors" directory is used
+- PROCESSORS_PARALLELISM - number of data processors that can be executed in parallel. If not present, number of CPU cores is used.
 - MSGW_PORT - port for metrics gateway. If not specified, 8080 is used
 - METRICS_BATCH_SIZE - batch size to use when sending data to metrics gateway
 

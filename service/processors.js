@@ -214,8 +214,8 @@ function executeProcessor(processorDesc, processingMetadata, contentMetadata) {
     child.once('error', function(err) {
         logger.debug('Execution of processor failed ', err);
     });
-    child.once('exit', function(code) {
-        logger.debug('Processor exited with ' + code);
+    child.once('exit', function() {
+        logger.debug('Processor exited');
     });
     child.once('close', function() {
         readStream.destroy();

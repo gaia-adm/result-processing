@@ -10,6 +10,7 @@ var log4js = require('log4js');
 var amqp = require('amqplib');
 var VError = require('verror');
 var when = require('when');
+var os = require('os');
 
 var logger = log4js.getLogger('notification.js');
 
@@ -32,6 +33,13 @@ function getAmqCredentials() {
     return {
         username: process.env.AMQ_USER, password: process.env.AMQ_PASSWORD
     };
+}
+
+/**
+ * Returns number of processors that may execute in parallel.
+ */
+function getParallelism() {
+    return Number(process.env.PROCESSORS_PARALLELISM) || os.cpus().length;
 }
 
 /**
@@ -113,6 +121,10 @@ function initQueues(channel, processorDescs, msgConsumer) {
 function initChannel(conn, processorDescs, msgConsumer) {
     // TODO: consider channel per processor, but since Node.js is 1 thread maybe its not needed
     return conn.createChannel().then(function(ch) {
+        var parallelism = getParallelism();
+        logger.info('Allowing up to ' + parallelism + ' parallel data processor executions');
+        ch.prefetch(parallelism, true);
+
         // TODO: handle channel recreation in case of close caused by error
         function onClose() {
             channel = null;
