@@ -159,20 +159,41 @@ function onLogFromChild(processorDesc, str) {
 
 /**
  * Converts content metadata properties to environment variables object that can be used for process execution. We use
- * environment variables instead of process arguments since for program it may not be easy to read the arguments - one has
- * to use specialized argument parsing libraries which may be buggy or work differently. Its much easier to access process
- * environment variables. Environment variables will be prefixed with p_. String case is preserved.
+ * environment variables instead of process arguments since for program it may not be easy to read the arguments - one
+ * has to use specialized argument parsing libraries which may be buggy or work differently. Its much easier to access
+ * process environment variables. Environment variables will be prefixed with p_. String case is preserved.
  *
  * @param contentMetadata
  */
-function toEnvParams(contentMetadata) {
-    var envParams = {};
+function getEnvParams(contentMetadata) {
+    var envParams = util._extend({}, process.env);
     var keys = Object.keys(contentMetadata);
     for (var i = 0; i < keys.length; i++) {
         var key = keys[i];
         envParams['p_' + key] = contentMetadata[key];
     }
     return envParams;
+}
+
+/**
+ * Reimplementation of node.js child_process#exec which doesn't have buffer size limitation and is suitable for processing
+ * large data sizes. It uses spawn function instead.
+ *
+ * @param command command to execute
+ * @param options options for process spawn
+ */
+function exec(command, options) {
+    var file, args;
+    if (process.platform === 'win32') {
+        file = process.env.comspec || 'cmd.exe';
+        args = ['/s', '/c', '"' + command + '"'];
+        options = util._extend({}, options);
+        options.windowsVerbatimArguments = true;
+    } else {
+        file = '/bin/sh';
+        args = ['-c', command];
+    }
+    return childProcess.spawn(file, args, options);
 }
 
 /**
@@ -188,15 +209,17 @@ function toEnvParams(contentMetadata) {
 function executeProcessor(processorDesc, processingMetadata, contentMetadata) {
     logger.debug('Executing processor ' + processorDesc.name);
     var readStream = fs.createReadStream(processingMetadata.path);
-    var envParams = toEnvParams(contentMetadata);
-    var child = childProcess.exec(processorDesc.command, {cwd: processorDesc.path, env: envParams}, function (err) {
+    var envParams = getEnvParams(contentMetadata);
+    var child = exec(processorDesc.command, {cwd: processorDesc.path, env: envParams});
+    child.once('error', function(err) {
+        logger.debug('Execution of processor failed ', err);
+    });
+    child.once('exit', function(code) {
+        logger.debug('Processor exited with ' + code);
+    });
+    child.once('close', function() {
         readStream.destroy();
         cleanup();
-        if (err) {
-            logger.debug('Execution of processor failed ', err);
-        } else {
-            logger.debug('Processor exited');
-        }
     });
     var notifier = new ProcessingNotifier(processorDesc, child);
 
@@ -262,13 +285,17 @@ function processFile(processingMetadata, contentMetadata) {
 }
 
 /**
- * Class responsible for notification of caller with JSON data returned by result processor. This class extends EventEmitter.
- * 'data' event will be emitted whenever JSON object is sent by result processor. Receiver may choose to receive several
+ * Class responsible for notification of caller with JSON data returned by result processor. This class extends
+ * EventEmitter.
+ * 'data' event will be emitted whenever JSON object is sent by result processor. Receiver may choose to receive
+ * several
  * objects before sending them in bulk for efficiency reasons. Listener function will receive an object parameter.
- * 'end' event will be emitted when no more data is to be expected. If process startup failed, process exited with non 0
+ * 'end' event will be emitted when no more data is to be expected. If process startup failed, process exited with non
+ * 0
  * code or exited with 0 but there was a previous error there will be an error argument. In such case the operation is
  * not to be considered success.
- * 'error' event will be emitted if there was parsing error of result processor result. No more data events will be emitted.
+ * 'error' event will be emitted if there was parsing error of result processor result. No more data events will be
+ * emitted.
  *
  * @param processorDesc result processor descriptor
  * @param child result processor process
@@ -351,8 +378,8 @@ ProcessingNotifier.prototype._emitError = function(err) {
 };
 
 /**
- * To be invoked when the whole output stream has been parsed and there are no more data to be emitted. Data end can happen
- * before or after child process exists.
+ * To be invoked when the whole output stream has been parsed and there are no more data to be emitted. Data end can
+ * happen before or after child process exists.
  * @private
  */
 ProcessingNotifier.prototype._onDataEnd = function() {
