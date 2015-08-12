@@ -63,12 +63,20 @@ Supported environment parameters:
 
 Gruntfile.js is used for running tests, JSHint, JSDoc.
 
-For building production image distribution/release/Dockerfile is used. Local shell script setup.sh is used to execute statements requiring proxy (i.e npm install).
+For building production image distribution/release/*/Dockerfile is used. There is Dockerfile for pure Node.js service and Node.js+Python service. Local shell script setup.sh is used to execute statements requiring proxy (i.e npm install).
 
 Example:
-- docker build -t gaiaadm/result-processing:0.1 -f distribution/release/Dockerfile .
+- docker build -t gaiaadm/result-processing -f distribution/release/Dockerfile .
 
 For building image for development purposes, distribution/dev/Dockerfile can be used. The dev image is meant to be used for starting "nodemon server.js" which will automatically reload Node.js server after file change. The dev image doesn't start node.js automaticlly, instead it just starts shell. It also expects npm dependencies are already available. In dev environment one would setup mapping of "/src" to host file system.
+
+## Docker images
+
+Two Docker images are built:
+- gaiaadm/result-processing:latest - intended for data processors implemented in Node.js
+- gaiaadm/result-processing:latest-python - intended for data processors implemented in Python 3.4
+
+If data processor in other language is to be implemented, a new base image needs to be created, Dockerfile needs to be added and circle.yml adjusted.
 
 ## Running
 
@@ -86,5 +94,5 @@ Unless at least one processor is available the process will exit immediately. No
   - related to the fact we don't store processor execution state/result
 - currently there is no way for processor to tell the service version of the produced content. All result processors must thus produce data of the same version. Metrics gateway service may support multiple data format versions (i.e v1, v2 on its REST). If case of change we have to update code of all result processors.
   - if needed this could be solved by processor descriptor saying what data it produces on STDOUT and for whom
-- logging to STDERR always ends up as INFO on result-processing service - can be solved with either using JSON format in order to transport both level and message or just use hardcoded format like "LEVEL,MESSAGE"
+- logging to STDERR always ends up as INFO on result-processing service - can be solved with format like "LEVEL:LOCATION:MESSAGE" (this is format used by Python logging). If LEVEL is missing, ERROR level would be assumed.
 - no support for chaining multiple processors after each other. Celery supports this. We could use more streams than STDOUT and processor descriptor could specify where the stream output should go (i.e metrics-gateway or other processor).
