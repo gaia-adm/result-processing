@@ -161,7 +161,7 @@ function onLogFromChild(processorDesc, str) {
  * Converts content metadata properties to environment variables object that can be used for process execution. We use
  * environment variables instead of process arguments since for program it may not be easy to read the arguments - one
  * has to use specialized argument parsing libraries which may be buggy or work differently. Its much easier to access
- * process environment variables. Environment variables will be prefixed with p_. String case is preserved.
+ * process environment variables. Environment variables will be prefixed with P_. String case is preserved.
  *
  * @param contentMetadata
  */
@@ -170,7 +170,8 @@ function getEnvParams(contentMetadata) {
     var keys = Object.keys(contentMetadata);
     for (var i = 0; i < keys.length; i++) {
         var key = keys[i];
-        envParams['p_' + key] = contentMetadata[key];
+        // we convert key to uppercase since in Windows env variable keys are not case sensitive, while in Linux they are
+        envParams['P_' + key.toUpperCase()] = contentMetadata[key];
     }
     return envParams;
 }

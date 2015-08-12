@@ -12,13 +12,13 @@ Result processing component consists of two parts:
 - are executed as independent processes (thus eliminating problem with memory leaks)
 - can be implemented in any programing language
 - come with file named "processor-descriptor.json" which defines processor name, program to execute and declaration of what data it is capable of processing
-- receive parameters as environment variables prefixed with "p_". The following environment variables can be expected: "p_dataType", "p_contentType". "p_contentType" represents the HTTP Content-Type header value. Custom metadata from data providers will be accessible with prefix "p_c_".
+- receive parameters as environment variables prefixed with "P_". The following environment variables can be expected: "P_DATATYPE", "P_CONTENTTYPE". "P_CONTENTTYPE" represents the HTTP Content-Type header value. Custom metadata from data providers will be accessible with prefix "P_C_". Note that received parameter keys will always be uppercase regardless of the case used during data collection. This is to ensure compatibility between Windows (dev) and Linux (production) environments. Parameter values are case sensitive.
 - receive uploaded file on STDIN. The file can be binary or textual (i.e XML, JSON) and in theory can be quite big. It is not recommended to parse it at once. Processing ends when EOF is received from STDIN.
 - processed results are written to STDOUT in the form of JSON array containing JSON objects. JSON objects must have format expected by metrics-gateway-service ("/mgs/rest/v1/gateway/event"). It is recommended to write JSON objects to STDOUT while processing STDIN.
 - log can be written to STDERR (of all log levels, not just errors). It ends up in result upload service log under processor name.
 - must exit with 0 if there was no error, 1 if there was a general error
 - should support SIGTERM to terminate processing. After SIGTERM is sent, any output produced will be ignored by result processing service. When SIGTERM is received, STDIN will be closed as well (which may lead to parsing error due to incomplete input). SIGTERM is then a hint to application that this state is desired.
-- must support execution when STDIN is closed immediately, no "p_" parameters are present and exit with 0. This is used by result processing service to verify that the processor can be executed successfully.
+- must support execution when STDIN is closed immediately, no "P_" parameters are present and exit with 0. This is used by result processing service to verify that the processor can be executed successfully.
 
 Result processors receive parameters as environment variables instead of process arguments since in general its easier to process environment variables than command line arguments where CLI parsing libraries are necessary.
 

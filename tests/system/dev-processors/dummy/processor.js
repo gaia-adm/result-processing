@@ -7,7 +7,7 @@ console.error('Process parameters:');
 var keys = Object.keys(process.env);
 for (var i = 0; i < keys.length; i++) {
     var key = keys[i];
-    if (key.lastIndexOf('p_', 0) === 0) {
+    if (key.lastIndexOf('P_', 0) === 0) {
         var value = process.env[key];
         paramCount++;
         console.error(key.substr(2) + ' = ' + value);

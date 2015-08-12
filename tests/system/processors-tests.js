@@ -168,7 +168,7 @@ describe('processors tests', function() {
             // data is JSON object
             notifier.on('data', function(data) {
                 dataSeen++;
-                assert.strictEqual(data.dataType, 'produce-two-objects-metric/produce-two-objects-category' + dataSeen, 'Expected correct dataType value');
+                assert.strictEqual(data.DATATYPE, 'produce-two-objects-metric/produce-two-objects-category' + dataSeen, 'Expected correct dataType value');
             });
         });
 
@@ -190,7 +190,7 @@ describe('processors tests', function() {
             // data is JSON object
             notifier.on('data', function(data) {
                 dataSeen++;
-                assert.strictEqual(data.dataType, 'produce-many-objects-metric/produce-many-objects-category' + dataSeen, 'Expected correct dataType value');
+                assert.strictEqual(data.DATATYPE, 'produce-many-objects-metric/produce-many-objects-category' + dataSeen, 'Expected correct dataType value');
             });
         });
 
@@ -243,7 +243,7 @@ describe('processors tests', function() {
             notifier.on('data', function(data) {
                 // should be invoked only 1x
                 dataSeen++;
-                assert.strictEqual(data.dataType, 'produce-invalid-objects-metric/produce-invalid-objects-category' + dataSeen, 'Expected correct dataType value');
+                assert.strictEqual(data.DATATYPE, 'produce-invalid-objects-metric/produce-invalid-objects-category' + dataSeen, 'Expected correct dataType value');
             });
             notifier.on('error', function(err) {
                 errorSeen = true;
