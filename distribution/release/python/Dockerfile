@@ -13,6 +13,5 @@ RUN /tmp/setup.sh
 WORKDIR   /src
 
 RUN grunt jshint
-RUN grunt unit
 
 CMD ["node", "/src/server.js"]
