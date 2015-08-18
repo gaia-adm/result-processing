@@ -23,6 +23,18 @@ var logger = log4js.getLogger('processors.js');
 var processorsMap = {};
 
 /**
+ * RegExp of allowed data processor STDERR format. Example: 'ERROR:HelloWorld.py:Something failed'. Format corresponds
+ * to basic Python logging configuration.
+ * @type {RegExp}
+ */
+var childLogRegExp = new RegExp('([A-Z]+):([^:]+):(.*)');
+
+/**
+ * Map of supported data processor log levels. Corresponds to Python logger log levels.
+ */
+var childLogLevelMap = {'DEBUG': 'debug', 'INFO': 'info', 'WARNING': 'warn', 'ERROR': 'error', 'CRITICAL': 'fatal'};
+
+/**
  * Verifies processor at given path with given descriptor. Performs verification of the descriptor and test execution of
  * the processor.
  *
@@ -152,7 +164,17 @@ function onLogFromChild(processorDesc, str) {
     var logRecords = str.split(/\r?\n/);
     logRecords.forEach(function(logRecord) {
         if (logRecord.length > 0) {
-            processorDesc.logger.info(logRecord);
+            var parts = childLogRegExp.exec(logRecord);
+            if (parts) {
+                var logLevel = childLogLevelMap[parts[1]];
+                if (logLevel) {
+                    var logName = parts[2];
+                    var message = parts[3];
+                    processorDesc.logger.log(logLevel, logName + ' - ' + message);
+                    return;
+                }
+            }
+            processorDesc.logger.error(logRecord);
         }
     });
 }
@@ -224,7 +246,7 @@ function executeProcessor(processorDesc, processingMetadata, contentMetadata) {
     });
     var notifier = new ProcessingNotifier(processorDesc, child);
 
-    // log child stderr as info
+    // log child stderr into our logger
     var childErrStream = child.stderr;
     childErrStream.setEncoding('utf8');
     function onStdErrData(str) {
