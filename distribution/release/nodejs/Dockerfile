@@ -7,7 +7,7 @@ COPY . /src
 # to docker build command to allow setting up proxy
 ADD setup.sh /tmp/setup.sh
 RUN chmod +x /tmp/setup.sh
-RUN /tmp/setup.sh
+RUN /tmp/setup.sh /src
 
 # Set the working directory
 WORKDIR   /src

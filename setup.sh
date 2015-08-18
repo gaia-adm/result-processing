@@ -1,5 +1,9 @@
 #!/bin/bash
 
+if [ -n "$1" ];then
+    cd $1
+fi
+
 function test_connection()
 {
     curl --connect-timeout 5 -s -X OPTIONS http://www.google.com >> /dev/null
@@ -39,7 +43,6 @@ function setup_container()
 {
     echo "Setting up container.."
 
-    cd /src
     npm install
 }
 
