@@ -97,3 +97,4 @@ Unless at least one processor is available the process will exit immediately. No
   - if needed this could be solved by processor descriptor saying what data it produces on STDOUT and for whom
 - log level is not passed to data processor, it may result in unnecessary messages being sent to STDERR then being filtered out
 - no support for chaining multiple processors after each other. Celery supports this. We could use more streams than STDOUT and processor descriptor could specify where the stream output should go (i.e metrics-gateway or other processor).
+
