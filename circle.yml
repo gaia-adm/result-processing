@@ -8,6 +8,8 @@ dependencies:
 test:
   override:
     - docker run -d -e RABBITMQ_PASS="mypass" --name rabbitmq gaiaadm/rabbitmq; sleep 10
+    # run jshint
+    - docker run --name jshint-runner gaiaadm/result-processing:$BUILD_TAG grunt jshint
     # run unit tests on pure Node.js image
     - docker run -e AMQ_USER="admin" -e AMQ_PASSWORD="mypass" --link rabbitmq:amqserver --name unit-test-runner gaiaadm/result-processing:$BUILD_TAG grunt unit
     - docker cp unit-test-runner:/src/unit-test-results.xml $CIRCLE_TEST_REPORTS/nodejs
