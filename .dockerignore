@@ -1,0 +1,8 @@
+.idea
+.git
+.gitignore
+distribution
+doc
+node_modules
+circle.yaml
+README.md
