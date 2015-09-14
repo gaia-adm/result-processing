@@ -54,10 +54,11 @@ Same storage path used by result upload service must be accessible to result pro
 ## Configuration
 
 Supported environment parameters:
-- AMQ_USER, AMQ_PASSWORD for authenticating to RabbitMQ. This is temporary until a better way to retrieve credentials by services is available.
+- AMQ_USER, AMQ_PASSWORD for authenticating to RabbitMQ. This is temporary until a better way to retrieve credentials by services is available. AMQ_PASSWORD is optional.
+- AMQ_SERVER - location of RabbitMQ server in the form hostname:port
+- MGS_SERVER - location of the metrics gateway in the form hostname:port
 - PROCESSORS_PATH - path where result processors can be found. If not specified, "processors" directory is used
 - PROCESSORS_PARALLELISM - number of data processors that can be executed in parallel. If not present, number of CPU cores is used.
-- MSGW_PORT - port for metrics gateway. If not specified, 8080 is used
 - METRICS_BATCH_SIZE - batch size to use when sending data to metrics gateway
 
 ## Building
@@ -84,7 +85,7 @@ If data processor in other language is to be implemented, a new base image needs
 Note that normally you will be running concrete processor Docker image, not this image.
 
 Execute:
-- docker run -d -e AMQ_USER="admin" -e AMQ_PASSWORD="mypass" -v "/tmp:/upload" --link rabbitmq:amqserver --link mgs:metricsgw --name result-processing gaiaadm/result-processing:0.1
+- docker run -d -e AMQ_USER="admin" -e AMQ_SERVER="rabbitmq:5672" -e MGS_SERVER="metricsgw:8080" -v "/tmp:/upload" --link rabbitmq:rabbitmq --link mgs:metricsgw --name result-processing gaiaadm/result-processing
 
 Unless at least one processor is available the process will exit immediately. Note that the mount point for uploads must be the same in both result upload service and result processing service docker image. For development purposes usage of /tmp is sufficient. For production it needs to be NFSv4 volume. Linking requires knowledge of container name/id we are linking to (i.e "mgs", "rabbitmq" in example).
 

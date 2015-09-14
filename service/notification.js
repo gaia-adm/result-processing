@@ -27,12 +27,20 @@ function getAmqCredentials() {
     if (!process.env.AMQ_USER) {
         throw new Error('AMQ_USER environment variable is not specified');
     }
-    if (!process.env.AMQ_PASSWORD) {
-        throw new Error('AMQ_PASSWORD environment variable is not specified');
-    }
+    var pwd = process.env.AMQ_PASSWORD ? process.env.AMQ_PASSWORD : '';
     return {
-        username: process.env.AMQ_USER, password: process.env.AMQ_PASSWORD
+        username: process.env.AMQ_USER, password: pwd
     };
+}
+
+/**
+ * Returns hostname:port of RabbitMQ server.
+ */
+function getAmqServer() {
+    if (!process.env.AMQ_SERVER) {
+        throw new Error('AMQ_SERVER environment variable is not specified');
+    }
+    return process.env.AMQ_SERVER;
 }
 
 /**
@@ -160,7 +168,7 @@ function initChannel(conn, processorDescs, msgConsumer) {
 function initAmq(processorDescs, msgConsumer) {
     var credentials = getAmqCredentials();
     var url = 'amqp://' + credentials.username + ':' + credentials.password +
-                '@amqserver:5672?frameMax=0x1000&heartbeat=30';
+                '@' + getAmqServer() + '?frameMax=0x1000&heartbeat=30';
 
     return amqp.connect(url).then(function(conn) {
         // TODO: handle reconnect in case close caused by certain errors (not invalid credentials)

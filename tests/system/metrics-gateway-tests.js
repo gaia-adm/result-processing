@@ -12,13 +12,11 @@ describe('metrics-gateway client tests', function() {
 
     describe('invalid metrics-gateway-service', function() {
         afterEach(function() {
-            process.env.MSGW_HOST = null;
-            process.env.MSGW_PORT = null;
+            process.env.MGS_SERVER = null;
         });
 
         it('send with invalid hostname', function(done) {
-            process.env.MSGW_HOST = 'localhost';
-            process.env.MSGW_PORT = 32000;
+            process.env.MGS_SERVER = 'localhost:32000';
             metricsGateway.send({accessToken: 'accessToken'}, {some:'data'}, function(err) {
                 assert(err instanceof Error, 'Expected the callback be called with an error');
                 done();
@@ -32,7 +30,6 @@ describe('metrics-gateway client tests', function() {
         var server;
 
         before(function(done) {
-            process.env.MSGW_HOST = 'localhost';
             // start internal express server on random port
             app = express();
             var router = express.Router();
@@ -48,7 +45,7 @@ describe('metrics-gateway client tests', function() {
             app.use(defaultErrorHandler);
             server = http.createServer(app);
             server.listen(0, function () {
-                process.env.MSGW_PORT = server.address().port;
+                process.env.MGS_SERVER = 'localhost:' + server.address().port;
                 done();
             });
         });
@@ -103,8 +100,7 @@ describe('metrics-gateway client tests', function() {
         });
 
         after(function(done) {
-            process.env.MSGW_HOST = null;
-            process.env.MSGW_PORT = null;
+            process.env.MGS_SERVER = null;
             server.close(done);
         });
 

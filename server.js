@@ -24,7 +24,7 @@ exitOnSignal('SIGTERM');
 function exitOnSignal(signal) {
     process.on(signal, function() {
         logger.debug('Caught ' + signal + ', exiting');
-        graceApp.shutdown(1);
+        graceApp.shutdown(0);
     });
 }
 

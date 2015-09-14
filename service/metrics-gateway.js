@@ -17,9 +17,10 @@ var logger = log4js.getLogger('metrics_gateway.js');
  * @returns {string}
  */
 function getSendUri() {
-    var host = process.env.MSGW_HOST || 'metricsgw';
-    var port = process.env.MSGW_PORT || 8080;
-    return 'http://' + host + ':' + port + '/mgs/rest/v1/gateway/event';
+    if (!process.env.MGS_SERVER) {
+        throw new Error('MGS_SERVER environment variable is not specified');
+    }
+    return 'http://' + process.env.MGS_SERVER + '/mgs/rest/v1/gateway/event';
 }
 
 /**
