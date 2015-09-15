@@ -47,7 +47,12 @@ function getProcessorNames(processorDescs) {
  */
 function msgConsumer(msg, ackControl) {
     var contentStr = msg.content.toString();
-    logger.debug(" [x] Received '%s'", contentStr);
+    if (logger.isLevelEnabled(log4js.levels.TRACE)) {
+        logger.trace(" [x] Received '%s'", contentStr);
+    } else if (logger.isLevelEnabled(log4js.levels.DEBUG)) {
+        // with debug level log less
+        logger.debug(" [x] Received '%s...'", contentStr.substr(0, 50));
+    }
     // process file
     var processingMetadata = msg.properties.headers; // path, accessToken, tenantId
     var contentMetadata = JSON.parse(contentStr);

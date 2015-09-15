@@ -10,6 +10,9 @@
 var log4js = require('log4js');
 // replaces console.log function with log4j
 log4js.replaceConsole();
+if (process.env.LOG_LEVEL) {
+    log4js.setGlobalLogLevel(process.env.LOG_LEVEL);
+}
 var logger = log4js.getLogger('server.js');
 
 var grace = require('grace');

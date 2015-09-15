@@ -60,6 +60,7 @@ Supported environment parameters:
 - PROCESSORS_PATH - path where result processors can be found. If not specified, "processors" directory is used
 - PROCESSORS_PARALLELISM - number of data processors that can be executed in parallel. If not present, number of CPU cores is used.
 - METRICS_BATCH_SIZE - batch size to use when sending data to metrics gateway
+- LOG_LEVEL configures log level. TRACE, DEBUG, INFO, WARN, ERROR, FATAL are valid values.
 
 ## Building
 
@@ -96,5 +97,4 @@ Unless at least one processor is available the process will exit immediately. No
   - related to the fact we don't store processor execution state/result
 - currently there is no way for processor to tell the service version of the produced content. All result processors must thus produce data of the same version. Metrics gateway service may support multiple data format versions (i.e v1, v2 on its REST). If case of change we have to update code of all result processors.
   - if needed this could be solved by processor descriptor saying what data it produces on STDOUT and for whom
-- log level is not passed to data processor, it may result in unnecessary messages being sent to STDERR then being filtered out
 - no support for chaining multiple processors after each other. Celery supports this. We could use more streams than STDOUT and processor descriptor could specify where the stream output should go (i.e metrics-gateway or other processor).

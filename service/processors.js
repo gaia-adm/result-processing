@@ -30,9 +30,15 @@ var processorsMap = {};
 var childLogRegExp = new RegExp('([A-Z]+):([^:]+):(.*)');
 
 /**
- * Map of supported data processor log levels. Corresponds to Python logger log levels.
+ * Map of Python log levels used by child processor logger to log4js log levels.
  */
-var childLogLevelMap = {'DEBUG': 'debug', 'INFO': 'info', 'WARNING': 'warn', 'ERROR': 'error', 'CRITICAL': 'fatal'};
+var childLogLevelMap = {'DEBUG': 'DEBUG', 'INFO': 'INFO', 'WARNING': 'WARN', 'ERROR': 'ERROR', 'CRITICAL': 'FATAL'};
+
+/**
+ * Map of log4js level strings to Python log levels used by child processor logger.
+ */
+var log4jsToChildLogLevelMap = {'ALL': 'DEBUG', 'TRACE': 'DEBUG', 'DEBUG': 'DEBUG', 'INFO': 'INFO', 'WARN': 'WARNING',
+    'ERROR': 'ERROR', 'FATAL': 'CRITICAL', 'MARK': 'CRITICAL', 'OFF': 'CRITICAL'};
 
 /**
  * Verifies processor at given path with given descriptor. Performs verification of the descriptor and test execution of
@@ -185,9 +191,10 @@ function onLogFromChild(processorDesc, str) {
  * has to use specialized argument parsing libraries which may be buggy or work differently. Its much easier to access
  * process environment variables. Environment variables will be prefixed with P_. String case is preserved.
  *
+ * @param processorDesc
  * @param contentMetadata
  */
-function getEnvParams(contentMetadata) {
+function getEnvParams(processorDesc, contentMetadata) {
     var envParams = util._extend({}, process.env);
     var keys = Object.keys(contentMetadata);
     for (var i = 0; i < keys.length; i++) {
@@ -195,6 +202,9 @@ function getEnvParams(contentMetadata) {
         // we convert key to uppercase since in Windows env variable keys are not case sensitive, while in Linux they are
         envParams['P_' + key.toUpperCase()] = contentMetadata[key];
     }
+    // translate log level
+    var log4jsLevel = processorDesc.logger.level.levelStr;
+    envParams['P_LOG_LEVEL'] = log4jsToChildLogLevelMap[log4jsLevel];
     return envParams;
 }
 
@@ -232,7 +242,7 @@ function exec(command, options) {
 function executeProcessor(processorDesc, processingMetadata, contentMetadata) {
     logger.debug('Executing processor ' + processorDesc.name);
     var readStream = fs.createReadStream(processingMetadata.path);
-    var envParams = getEnvParams(contentMetadata);
+    var envParams = getEnvParams(processorDesc, contentMetadata);
     var child = exec(processorDesc.command, {cwd: processorDesc.path, env: envParams});
     child.once('error', function(err) {
         logger.debug('Execution of processor failed ', err);

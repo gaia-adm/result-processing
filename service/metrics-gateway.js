@@ -31,8 +31,10 @@ function getSendUri() {
  * @param callback callback that will be notified upon success/error
  */
 function send(processingMetadata, data, callback) {
-    if (logger.level.level <= log4js.levels.DEBUG.level) {
+    if (logger.isLevelEnabled(log4js.levels.TRACE)) {
         logger.debug('Sending to /mgs/rest/v1/gateway/event: ' + JSON.stringify(data));
+    } else if (logger.isLevelEnabled(log4js.levels.DEBUG)) {
+        logger.debug('Sending to /mgs/rest/v1/gateway/event: ' + JSON.stringify(data).substr(0, 50) + '...');
     }
 
     var body = JSON.stringify(Array.isArray(data) ? data : [data]);
