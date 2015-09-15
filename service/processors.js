@@ -204,7 +204,7 @@ function getEnvParams(processorDesc, contentMetadata) {
     }
     // translate log level
     var log4jsLevel = processorDesc.logger.level.levelStr;
-    envParams['P_LOG_LEVEL'] = log4jsToChildLogLevelMap[log4jsLevel];
+    envParams.P_LOG_LEVEL = log4jsToChildLogLevelMap[log4jsLevel];
     return envParams;
 }
 
