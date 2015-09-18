@@ -9,6 +9,9 @@
 var log4js = require('log4js');
 var amqp = require('amqplib');
 var VError = require('verror');
+var WError = VError.WError;
+var errorUtils = require('../util/error-utils.js');
+var getFullError = errorUtils.getFullError;
 var when = require('when');
 var os = require('os');
 
@@ -135,11 +138,12 @@ function initChannel(conn, processorDescs, msgConsumer) {
 
         // TODO: handle channel recreation in case of close caused by error
         function onClose() {
+            logger.debug('Closed MQ channel');
             channel = null;
         }
 
         function onError(err) {
-            logger.error(err.stack);
+            logger.error(getFullError(new WError(err, 'Channel reached error state')));
         }
 
         function cleanup() {
@@ -173,10 +177,12 @@ function initAmq(processorDescs, msgConsumer) {
     return amqp.connect(url).then(function(conn) {
         // TODO: handle reconnect in case close caused by certain errors (not invalid credentials)
         function onClose() {
+            logger.debug('Closed MQ connection');
+            connection = null;
         }
 
         function onError(err) {
-            logger.error(err.stack);
+            logger.error(getFullError(new WError(err, 'Connection reached error state')));
         }
 
         function cleanup() {
@@ -196,8 +202,8 @@ function initAmq(processorDescs, msgConsumer) {
         connection = conn;
         return initChannel(conn, processorDescs, msgConsumer);
     }, function (err) {
-        logger.error(err.stack);
-        throw new VError(err, 'Failed to connect to AMQ');
+        // amqp.connect failed, could be wrong password, host unreachable etc
+        throw new WError(err, 'Failed to connect to RabbitMQ');
     });
 }
 
@@ -208,11 +214,7 @@ function initAmq(processorDescs, msgConsumer) {
  */
 function closeChannel() {
     if (channel !== null) {
-        var ok = channel.close();
-        return ok.finally(function() {
-            logger.debug('Closed AMQ channel');
-            channel = null;
-        });
+        return channel.close();
     } else {
         return when.resolve();
     }
@@ -225,11 +227,7 @@ function closeChannel() {
  */
 function closeConnection() {
     if (connection !== null) {
-        var ok = connection.close();
-        return ok.finally(function() {
-            logger.debug('Closed AMQ connection');
-            connection = null;
-        });
+        return connection.close();
     } else {
         return when.resolve();
     }

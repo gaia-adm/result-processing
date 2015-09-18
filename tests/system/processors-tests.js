@@ -123,7 +123,8 @@ describe('processors tests', function() {
             notifier.on('error', function(err) {
                 // the opening [ is not closed due to error, therefore JSON parser reports an error. It will be
                 // followed by end event with error having result code on it
-                assert(err.message.indexOf('Parser has expected a value') !== -1, 'Expected "Parser has expected a value" error');
+                assert(err.message.indexOf('Error when handling response from') !== -1, 'Expected "Error when handling response from" error');
+                assert(err.cause().message.indexOf('Parser has expected a value') !== -1, 'Expected "Parser has expected a value" error');
                 errorEventOk = true;
             });
         });
@@ -218,7 +219,8 @@ describe('processors tests', function() {
             });
             notifier.on('error', function(err) {
                 errorSeen = true;
-                assert(err.message.indexOf('test error in data handler') !== -1, 'Expected "test error in data handler" error');
+                assert(err.message.indexOf('Error when handling response from') !== -1, 'Expected "Error when handling response from" error');
+                assert(err.cause().message.indexOf('test error in data handler') !== -1, 'Expected "test error in data handler" error');
             });
         });
 
@@ -247,7 +249,8 @@ describe('processors tests', function() {
             });
             notifier.on('error', function(err) {
                 errorSeen = true;
-                assert(err.message.indexOf('expected an object key') !== -1, 'Expected "expected an object key error');
+                assert(err.message.indexOf('Error when handling response from ') !== -1, 'Expected "Error when handling response from"');
+                assert(err.cause().message.indexOf('expected an object key') !== -1, 'Expected "expected an object key error"');
             });
         });
 

@@ -18,6 +18,10 @@ var logger = log4js.getLogger('server.js');
 var grace = require('grace');
 var manager = require('./service/manager');
 var path = require('path');
+var VError = require('verror');
+var WError = VError.WError;
+var errorUtils = require('./util/error-utils.js');
+var getFullError = errorUtils.getFullError;
 
 var graceApp = grace.create();
 
@@ -37,13 +41,13 @@ graceApp.on('start', function () {
     manager.startServer(processorsPath).done(function onOk() {
         logger.info(' [*] Waiting for messages. To exit press CTRL+C');
     }, function onError(err) {
-        logger.error('Server failed to start due to error', err);
+        logger.error(getFullError(new WError(err, 'Server failed to start due to error')));
         graceApp.shutdown(1);
     });
 });
 
-graceApp.on('error', function(err){
-    console.error(err);
+graceApp.on('error', function(err) {
+    console.error(getFullError(err));
 });
 
 graceApp.on('shutdown', function(cb) {

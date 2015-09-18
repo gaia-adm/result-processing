@@ -8,6 +8,7 @@
 var log4js = require('log4js');
 var request = require('request');
 var VError = require('verror');
+var WError = VError.WError;
 
 var logger = log4js.getLogger('metrics_gateway.js');
 
@@ -32,7 +33,7 @@ function getSendUri() {
  */
 function send(processingMetadata, data, callback) {
     if (logger.isLevelEnabled(log4js.levels.TRACE)) {
-        logger.debug('Sending to /mgs/rest/v1/gateway/event: ' + JSON.stringify(data));
+        logger.trace('Sending to /mgs/rest/v1/gateway/event: ' + JSON.stringify(data));
     } else if (logger.isLevelEnabled(log4js.levels.DEBUG)) {
         logger.debug('Sending to /mgs/rest/v1/gateway/event: ' + JSON.stringify(data).substr(0, 50) + '...');
     }
@@ -47,14 +48,13 @@ function send(processingMetadata, data, callback) {
     };
     request(options, function(err, response, body) {
         if (err) {
-            logger.error(err.stack);
-            callback(new VError(err, 'Failed to push metrics to metrics gateway'));
+            callback(new WError(err, 'Failed to push metrics to metrics gateway'));
         } else {
             if (response.statusCode >= 200 && response.statusCode < 300) {
                 callback();
             } else {
-                logger.error('Failed to push metrics to metrics gateway, status code '+ response.statusCode);
-                logger.error(body);
+                logger.debug('Failed to push metrics to metrics gateway, status code '+ response.statusCode);
+                logger.debug(body);
                 callback(new Error('Failed to push metrics to metrics gateway, status code '+ response.statusCode));
             }
         }

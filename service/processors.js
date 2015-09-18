@@ -11,6 +11,9 @@ var async = require("async");
 var nodefn = require('when/node');
 var childProcess = require('child_process');
 var VError = require('verror');
+var WError = VError.WError;
+var errorUtils = require('../util/error-utils.js');
+var getFullError = errorUtils.getFullError;
 var StreamArray = require('stream-json/utils/StreamArray');
 var events = require('events');
 var util = require('util');
@@ -99,15 +102,14 @@ function discoverProcessor(processorDescs, processorPath, callback) {
                 try {
                     fs.accessSync(descPath, fs.R_OK);
                 } catch (err) {
-                    logger.error(err.stack);
-                    throw new VError(err, 'Unable to read ' + descPath);
+                    throw new WError(err, 'Unable to read ' + descPath);
                 }
                 var content = fs.readFileSync(descPath).toString();
                 var desc = JSON.parse(content);
                 desc.path = processorPath;
                 verifyProcessor(processorPath, desc, function(err) {
                     if (err) {
-                        logger.error('Verification of processor ' + desc.name + ' failed with error ', err);
+                        logger.error(getFullError(new WError(err, 'Verification of processor ' + desc.name + ' failed with error')));
                     } else {
                         desc.logger = log4js.getLogger('processor:' + desc.name);
                         processorDescs.push(desc);
@@ -121,7 +123,7 @@ function discoverProcessor(processorDescs, processorPath, callback) {
             callback();
         }
     } catch (err) {
-        logger.error('Error while discovering processor at ' + processorPath, err);
+        logger.error(getFullError(new WError(err, 'Error while discovering processor at ' + processorPath)));
         callback();
     }
 }
@@ -276,8 +278,8 @@ function executeProcessor(processorDesc, processingMetadata, contentMetadata) {
     objectStream.output.on('end', onObjectStreamEnd);
     function onParserError(err) {
         // can be parsing error or error during execution of notifier 'data' handler
-        logger.error(err.stack);
-        notifier._emitError(new VError(err, 'Error when handling response from \'' + processorDesc.name + '\''));
+        var newErr = new WError(err, 'Error when handling response from \'' + processorDesc.name + '\'');
+        notifier._emitError(newErr);
         // stop the process, since we cannot parse the result
         notifier.stop();
     }

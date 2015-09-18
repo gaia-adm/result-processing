@@ -18,6 +18,12 @@ for (var i = 0; i < keys.length; i++) {
     }
 }
 
+if (paramCount == 0) {
+    process.exit(0);
+}
+
+process.exit(1);
+
 log('DEBUG', 'processor.js', 'Process stdin:');
 process.stdin.setEncoding('utf8');
 process.stdin.on('data', function(str) {

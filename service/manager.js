@@ -11,6 +11,9 @@ var notification = require('./notification');
 var metricsGateway = require('./metrics-gateway');
 var when = require('when');
 var VError = require('verror');
+var WError = VError.WError;
+var errorUtils = require('../util/error-utils.js');
+var getFullError = errorUtils.getFullError;
 var fs = require('fs');
 
 var logger = log4js.getLogger('manager.js');
@@ -63,8 +66,7 @@ function msgConsumer(msg, ackControl) {
     function sendData(dataToSend, end) {
         metricsGateway.send(processingMetadata, dataToSend, function(err) {
             if (err) {
-                logger.error(err.stack);
-                logger.error(new VError(err, 'Failed to send metrics to metrics-gateway-service'));
+                logger.error(getFullError(new WError(err, 'Failed to send metrics to metrics-gateway-service')));
                 // stop further processing
                 notifier.stop();
                 // ack immediately, no need to wait
@@ -107,8 +109,13 @@ function msgConsumer(msg, ackControl) {
                     // TODO: in case of processing failure the message should be saved in DB to allow later processing/investigation
                     // we cannot nack since it will result in immediate redelivery and another failure forever
                     // in case of error we also don't delete the file
-                    logger.error(err.stack);
-                    logger.error(new VError(err, 'Result processing failed with code %s', err.code));
+                    var errMsg;
+                    if (err.code) {
+                        errMsg = 'Result processing failed with code ' + err.code;
+                    } else {
+                        errMsg = 'Result processing failed';
+                    }
+                    logger.error(getFullError(new WError(err, errMsg)));
                 }
                 ackControl.ack();
                 ackResponse = true;
@@ -121,8 +128,7 @@ function msgConsumer(msg, ackControl) {
     notifier.on('end', onEnd);
     // handle processing errors
     function onError(err) {
-        logger.error(err.stack);
-        logger.error(new VError(err, 'Data processing error'));
+        logger.error(getFullError(new WError(err, 'Data processing error')));
         // further processing will stop automatically
         // ack immediately, no need to wait
         // TODO: in case of processing failure the message should be saved in DB to allow later processing/investigation
@@ -143,7 +149,7 @@ function msgConsumer(msg, ackControl) {
 function unlinkFile(path) {
     fs.unlink(path, function(err) {
         if (err) {
-            logger.error(err, 'Failed to unlink ' + path);
+            logger.error(getFullError(new WError(err, 'Failed to unlink ' + path)));
         }
     });
 }
