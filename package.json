@@ -11,28 +11,28 @@
     "log4js": "0.6.26",
     "request": "2.58.0",
     "http-status-codes": "1.0.5",
-    "amqplib": "0.3.2",
+    "amqplib": "0.4.0",
     "when": "3.7.3",
     "verror": "1.6.0",
-    "path": "0.11.14",
-    "async": "1.2.1",
+    "path": "0.12.7",
+    "async": "1.4.2",
     "stream-json": "0.4.0",
     "grace": "0.2.5"
   },
   "devDependencies": {
-    "express": "^4.12.4",
-    "body-parser": "^1.13.0",
-    "chai": "^3.0.0",
+    "express": "^4.13.3",
+    "body-parser": "^1.14.0",
+    "chai": "^3.2.0",
     "grunt": "^0.4.5",
-    "grunt-contrib-jshint": "^0.11.2",
+    "grunt-contrib-jshint": "^0.11.3",
     "grunt-mocha-test": "^0.12.7",
-    "grunt-jsdoc": "^0.6.7",
+    "grunt-jsdoc": "^0.6.8",
     "jsdoc": "^3.3.2",
     "mocha": "^2.2.5",
     "mocha-junit-reporter": "^1.6.1",
     "sinon": "^1.15.4",
     "mockery": "^1.4.0",
     "node-uuid": "^1.4.3",
-    "tmp": "^0.0.26"
+    "tmp": "^0.0.27"
   }
 }
