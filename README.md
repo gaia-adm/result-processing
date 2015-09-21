@@ -92,7 +92,6 @@ Unless at least one processor is available the process will exit immediately. No
 
 ## Limitations
 
-- we don't handle reconnection to RabbitMQ, handle AMQ channel recreation
 - notification message is acked both in case of success and error during processing. This is done to avoid infinite message redelivery. It should be enhanced by storing the notification in some DB for files with errors and only then acking the message. This would allow us to process the file again later or have it deleted without processing (if invalid).
   - related to the fact we don't store processor execution state/result
 - currently there is no way for processor to tell the service version of the produced content. All result processors must thus produce data of the same version. Metrics gateway service may support multiple data format versions (i.e v1, v2 on its REST). If case of change we have to update code of all result processors.

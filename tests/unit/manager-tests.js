@@ -71,7 +71,7 @@ describe('manager tests', function() {
             // setup mocks
             var mock = sinon.mock(notification);
             notificationStub.initAmq.restore();
-            mock.expects('initAmq').once().withExactArgs(sinon.match(processorDescs), sinon.match.func).returns(when.resolve());
+            mock.expects('initAmq').once().withExactArgs(sinon.match(processorDescs), sinon.match.func, sinon.match(true)).returns(when.resolve());
 
             manager.startServer('processors-path').done(function onOk() {
                 mock.verify();

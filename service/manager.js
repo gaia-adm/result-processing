@@ -160,14 +160,15 @@ function unlinkFile(path) {
  * @param processorsPath directory where result processors are located
  * @returns promise
  */
-function startServer(processorsPath) {
+function startServer(processorsPath, handleReconnect) {
+    handleReconnect = handleReconnect || true;
     // discover result processors
     var ok = when.try(processors.init, processorsPath);
     return ok.then(function(processorDescs) {
         // we got array of discovered processors
         if (processorDescs.length > 0) {
             logger.info('Found the following result processors: ' + getProcessorNames(processorDescs));
-            return notification.initAmq(processorDescs, msgConsumer);
+            return notification.initAmq(processorDescs, msgConsumer, handleReconnect);
         } else {
             throw new Error('Found no result processors in "' + processorsPath + '"');
         }

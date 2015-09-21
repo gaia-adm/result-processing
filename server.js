@@ -38,9 +38,7 @@ function exitOnSignal(signal) {
 var processorsPath = process.env.PROCESSORS_PATH || path.join(__dirname, 'processors');
 
 graceApp.on('start', function () {
-    manager.startServer(processorsPath).done(function onOk() {
-        logger.info(' [*] Waiting for messages. To exit press CTRL+C');
-    }, function onError(err) {
+    manager.startServer(processorsPath).catch(function onError(err) {
         logger.error(getFullError(new WError(err, 'Server failed to start due to error')));
         graceApp.shutdown(1);
     });

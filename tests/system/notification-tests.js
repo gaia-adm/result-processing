@@ -27,7 +27,7 @@ describe('notification tests', function() {
                 console.warn('msgConsumer is not set. Unexpected message ' + msg.content.toString());
                 ackControl.ack();
             }
-        }).then(null, function onError(err) {
+        }, false).then(null, function onError(err) {
             assert.fail(err, null, 'Failed to init notification module');
         });
         var promise2 = amqp.connect(getAmqUrl()).then(function(conn) {

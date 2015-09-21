@@ -18,8 +18,16 @@ var os = require('os');
 var logger = log4js.getLogger('notification.js');
 
 var RESULT_EXCHANGE = 'result-upload';
+var processorDescs = null;
+var msgConsumer = null;
 var connection = null;
 var channel = null;
+
+var RECONNECT_TIMEOUT = 10000;
+var MAX_RECONNECT_COUNTER = 3;
+var reconnectCounter = 0;
+var recreateChannelTimerId = null;
+var reconnectTimerId = null;
 
 /**
  * Collects credentials for connection to AMQ (RabbitMQ).
@@ -131,12 +139,11 @@ function initQueues(channel, processorDescs, msgConsumer) {
  */
 function initChannel(conn, processorDescs, msgConsumer) {
     // TODO: consider channel per processor, but since Node.js is 1 thread maybe its not needed
-    return conn.createChannel().then(function(ch) {
+    var ok = conn.createChannel().then(function(ch) {
         var parallelism = getParallelism();
         logger.info('Allowing up to ' + parallelism + ' parallel data processor executions');
         ch.prefetch(parallelism, true);
 
-        // TODO: handle channel recreation in case of close caused by error
         function onClose() {
             logger.debug('Closed MQ channel');
             channel = null;
@@ -144,6 +151,7 @@ function initChannel(conn, processorDescs, msgConsumer) {
 
         function onError(err) {
             logger.error(getFullError(new WError(err, 'Channel reached error state')));
+            scheduleRecreateChannel();
         }
 
         function cleanup() {
@@ -159,23 +167,30 @@ function initChannel(conn, processorDescs, msgConsumer) {
         ch.on('close', cleanup);
 
         channel = ch;
-        return initQueues(ch, processorDescs, msgConsumer);
+        return ch.assertExchange('result-upload', 'direct', {durable: true}).then(function() {
+        //return ch.checkExchange('wrongEx').then(function() {
+            logger.debug('Exchange \'result-upload\' has been asserted into existence');
+        });
     });
+    ok = ok.then(function() {
+        return initQueues(channel, processorDescs, msgConsumer);
+    });
+    ok = ok.then(function() {
+        reconnectCounter = 0;
+    });
+    return ok;
 }
 
 /**
  * Initializes connection to RabbitMQ and returns promise to allow waiting for initialization completion.
- * @param processorDescs result processor descriptors
- * @param msgConsumer message consumer
  * @returns promise
  */
-function initAmq(processorDescs, msgConsumer) {
+function initAmqConnection(handleReconnect) {
     var credentials = getAmqCredentials();
     var url = 'amqp://' + credentials.username + ':' + credentials.password +
                 '@' + getAmqServer() + '?frameMax=0x1000&heartbeat=30';
 
     return amqp.connect(url).then(function(conn) {
-        // TODO: handle reconnect in case close caused by certain errors (not invalid credentials)
         function onClose() {
             logger.debug('Closed MQ connection');
             connection = null;
@@ -183,6 +198,9 @@ function initAmq(processorDescs, msgConsumer) {
 
         function onError(err) {
             logger.error(getFullError(new WError(err, 'Connection reached error state')));
+            if (handleReconnect) {
+                scheduleReconnect();
+            }
         }
 
         function cleanup() {
@@ -205,6 +223,67 @@ function initAmq(processorDescs, msgConsumer) {
         // amqp.connect failed, could be wrong password, host unreachable etc
         throw new WError(err, 'Failed to connect to RabbitMQ');
     });
+}
+
+function initAmq(pProcessorDescs, pMsgConsumer, handleReconnect) {
+    processorDescs = pProcessorDescs;
+    msgConsumer = pMsgConsumer;
+    var ok = initAmqConnection(handleReconnect);
+    ok = ok.then(function onFulfilled() {
+        logger.info(' [*] Waiting for messages. To exit press CTRL+C');
+    }).catch(function onRejected(err) {
+        if (handleReconnect) {
+            logger.error(getFullError(new WError(err, 'Failed to initialize RabbitMQ connection or channel')));
+            scheduleReconnect();
+        } else {
+            throw err;
+        }
+    });
+    return ok;
+}
+
+function scheduleRecreateChannel() {
+    if (recreateChannelTimerId) {
+        return;
+    }
+    function doRecreateChannel() {
+        recreateChannelTimerId = null;
+        closeChannel().finally(function() {
+            if (connection !== null) {
+                logger.debug('Recreating channel..');
+                initChannel(connection, processorDescs, msgConsumer);
+            }
+        });
+    }
+    reconnectCounter++;
+    reconnectCounter = Math.min(reconnectCounter, MAX_RECONNECT_COUNTER);
+    var delay = reconnectCounter * RECONNECT_TIMEOUT;
+    logger.debug('Trying next channel recreation in ' + delay / 1000 + 's');
+    recreateChannelTimerId = setTimeout(doRecreateChannel, delay);
+}
+
+function scheduleReconnect() {
+    if (recreateChannelTimerId) {
+        reconnectCounter--;
+        reconnectCounter = Math.max(reconnectCounter, 0);
+        clearTimeout(recreateChannelTimerId);
+        recreateChannelTimerId = null;
+    }
+    if (reconnectTimerId) {
+        return;
+    }
+    function doReconnect() {
+        reconnectTimerId = null;
+        shutdown().finally(function() {
+            logger.debug('Reconnecting to RabbitMQ..');
+            initAmq(processorDescs, msgConsumer, true);
+        });
+    }
+    reconnectCounter++;
+    reconnectCounter = Math.min(reconnectCounter, MAX_RECONNECT_COUNTER);
+    var delay = reconnectCounter * RECONNECT_TIMEOUT;
+    logger.debug('Trying next reconnect in ' + delay / 1000 + 's');
+    reconnectTimerId = setTimeout(doReconnect, delay);
 }
 
 /**
