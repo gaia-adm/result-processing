@@ -3,27 +3,29 @@ machine:
     - docker
 dependencies:
   override:
-    - docker build -f distribution/release/nodejs/Dockerfile -t gaiaadm/result-processing:$BUILD_TAG .
-    - docker build -f distribution/release/python/Dockerfile -t gaiaadm/result-processing:$BUILD_TAG-python .
+    - docker build -f distribution/release/nodejs/Dockerfile -t gaiaadm/result-processing .
+    - docker build -f distribution/release/python/Dockerfile -t gaiaadm/result-processing:latest-python .
+    - docker tag gaiaadm/result-processing gaiaadm/result-processing:$CIRCLE_BUILD_NUM
+    - docker tag gaiaadm/result-processing:latest-python gaiaadm/result-processing:$CIRCLE_BUILD_NUM-python
 test:
   override:
     - docker run -d --name rabbitmq gaiaadm/rabbitmq; sleep 10
     # run jshint
-    - docker run --name jshint-runner gaiaadm/result-processing:$BUILD_TAG grunt jshint
+    - docker run --name jshint-runner gaiaadm/result-processing grunt jshint
     # run unit tests on pure Node.js image
-    - docker run --name unit-test-runner gaiaadm/result-processing:$BUILD_TAG grunt unit
+    - docker run --name unit-test-runner gaiaadm/result-processing grunt unit
     - docker cp unit-test-runner:/src/unit-test-results.xml $CIRCLE_TEST_REPORTS/nodejs
     - docker cp unit-test-runner:/src/unit-test-results.txt $CIRCLE_ARTIFACTS/nodejs
     # run system tests on pure Node.js image
-    - docker run -e AMQ_USER="admin" -e AMQ_SERVER="rabbitmq:5672" --link rabbitmq:rabbitmq --name system-test-runner gaiaadm/result-processing:$BUILD_TAG grunt system
+    - docker run -e AMQ_USER="admin" -e AMQ_SERVER="rabbitmq:5672" --link rabbitmq:rabbitmq --name system-test-runner gaiaadm/result-processing grunt system
     - docker cp system-test-runner:/src/system-test-results.xml $CIRCLE_TEST_REPORTS/nodejs
     - docker cp system-test-runner:/src/system-test-results.txt $CIRCLE_ARTIFACTS/nodejs
     # run unit tests on Python image
-    - docker run --name unit-test-runner-python gaiaadm/result-processing:$BUILD_TAG-python grunt unit
+    - docker run --name unit-test-runner-python gaiaadm/result-processing:latest-python grunt unit
     - docker cp unit-test-runner-python:/src/unit-test-results.xml $CIRCLE_TEST_REPORTS/python
     - docker cp unit-test-runner-python:/src/unit-test-results.txt $CIRCLE_ARTIFACTS/python
     # run system tests on Python image
-    - docker run -e AMQ_USER="admin" -e AMQ_SERVER="rabbitmq:5672" --link rabbitmq:rabbitmq --name system-test-runner-python gaiaadm/result-processing:$BUILD_TAG-python grunt system
+    - docker run -e AMQ_USER="admin" -e AMQ_SERVER="rabbitmq:5672" --link rabbitmq:rabbitmq --name system-test-runner-python gaiaadm/result-processing:latest-python grunt system
     - docker cp system-test-runner-python:/src/system-test-results.xml $CIRCLE_TEST_REPORTS/python
     - docker cp system-test-runner-python:/src/system-test-results.txt $CIRCLE_ARTIFACTS/python
 deployment:
@@ -31,8 +33,9 @@ deployment:
     branch: master
     commands:
       - docker login -e $DOCKER_EMAIL -u $DOCKER_USER -p $DOCKER_PASS
-      - docker push gaiaadm/result-processing:$BUILD_TAG
-      - docker push gaiaadm/result-processing:$BUILD_TAG-python
+      - docker push gaiaadm/result-processing
+      - docker push gaiaadm/result-processing:latest-python
+      - docker push gaiaadm/result-processing:$CIRCLE_BUILD_NUM-python
 general:
   branches:
     only:
