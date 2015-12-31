@@ -1,4 +1,6 @@
-CircleCI build status: [![Circle CI](https://circleci.com/gh/gaia-adm/result-processing.svg?style=svg)](https://circleci.com/gh/gaia-adm/result-processing)
+[![](https://badge.imagelayers.io/gaiaadm/result-processing:latest.svg)](https://imagelayers.io/?images=gaiaadm/result-processing:latest 'Get your own badge on imagelayers.io')
+
+*CircleCI:* [![Circle CI](https://circleci.com/gh/gaia-adm/result-processing.svg?style=svg)](https://circleci.com/gh/gaia-adm/result-processing)
 
 # result-processing
 
