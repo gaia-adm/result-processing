@@ -1,4 +1,4 @@
-[![Circle CI](https://circleci.com/gh/gaia-adm/result-processing.svg?style=svg)](https://circleci.com/gh/gaia-adm/result-processing) [![](https://badge.imagelayers.io/gaiaadm/result-processing:latest.svg)](https://imagelayers.io/?images=gaiaadm/result-processing:latest 'Get your own badge on imagelayers.io')
+[![Circle CI](https://circleci.com/gh/gaia-adm/result-processing.svg?style=svg)](https://circleci.com/gh/gaia-adm/result-processing) [![Codacy Badge](https://api.codacy.com/project/badge/grade/aab94769858b4f6998a16659153dcf1a)](https://www.codacy.com/app/alexei-led/result-processing) [![](https://badge.imagelayers.io/gaiaadm/result-processing:latest.svg)](https://imagelayers.io/?images=gaiaadm/result-processing:latest 'Get your own badge on imagelayers.io')
 
 # result-processing
 
