@@ -18,12 +18,17 @@ test:
     - docker run -d --name rabbitmq -e "RABBITMQ_PASS=admin" gaiaadm/rabbitmq; sleep 10
     # run jshint
     - docker run --name jshint-runner gaiaadm/result-processing grunt jshint
+    # create artifact folders
+    - mkdir -p ./$CIRCLE_TEST_REPORTS/nodejs
+    - mkdir -p ./$CIRCLE_ARTIFACTS/nodejs
+    - mkdir -p ./$CIRCLE_TEST_REPORTS/python
+    - mkdir -p ./$CIRCLE_ARTIFACTS/python
     # run unit tests on pure Node.js image
     - docker run --name unit-test-runner gaiaadm/result-processing grunt unit
     - docker cp unit-test-runner:/src/unit-test-results.xml $CIRCLE_TEST_REPORTS/nodejs/unit-test-results.xml
     - docker cp unit-test-runner:/src/unit-test-results.txt $CIRCLE_ARTIFACTS/nodejs/unit-test-results.txt
     # run system tests on pure Node.js image
-    - docker run -e AMQ_USER="admin" -e AMQ_SERVER="rabbitmq:5672" --link rabbitmq:rabbitmq --name system-test-runner gaiaadm/result-processing grunt system
+    - docker run -e AMQ_USER="admin" -e AMQ_PASSWORD="admin" -e AMQ_SERVER="rabbitmq:5672" --link rabbitmq:rabbitmq --name system-test-runner gaiaadm/result-processing grunt system
     - docker cp system-test-runner:/src/system-test-results.xml $CIRCLE_TEST_REPORTS/nodejs/system-test-results.xml
     - docker cp system-test-runner:/src/system-test-results.txt $CIRCLE_ARTIFACTS/nodejs/system-test-results.txt
     # run unit tests on Python image
@@ -31,7 +36,7 @@ test:
     - docker cp unit-test-runner-python:/src/unit-test-results.xml $CIRCLE_TEST_REPORTS/python/unit-test-results.xml
     - docker cp unit-test-runner-python:/src/unit-test-results.txt $CIRCLE_ARTIFACTS/python/unit-test-results.txt
     # run system tests on Python image
-    - docker run -e AMQ_USER="admin" -e AMQ_SERVER="rabbitmq:5672" --link rabbitmq:rabbitmq --name system-test-runner-python gaiaadm/result-processing:latest-python grunt system
+    - docker run -e AMQ_USER="admin" -e AMQ_PASSWORD="admin" -e AMQ_SERVER="rabbitmq:5672" --link rabbitmq:rabbitmq --name system-test-runner-python gaiaadm/result-processing:latest-python grunt system
     - docker cp system-test-runner-python:/src/system-test-results.xml $CIRCLE_TEST_REPORTS/python/system-test-results.xml
     - docker cp system-test-runner-python:/src/system-test-results.txt $CIRCLE_ARTIFACTS/python/system-test-results.txt
 deployment:
