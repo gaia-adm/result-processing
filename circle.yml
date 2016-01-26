@@ -9,8 +9,10 @@ dependencies:
   override:
     - docker build -f distribution/release/nodejs/Dockerfile -t gaiaadm/result-processing .
     - docker build -f distribution/release/python/Dockerfile -t gaiaadm/result-processing:latest-python .
-    - docker tag gaiaadm/result-processing gaiaadm/result-processing:$CIRCLE_BUILD_NUM
-    - docker tag gaiaadm/result-processing:latest-python gaiaadm/result-processing:$CIRCLE_BUILD_NUM-python
+    - docker tag gaiaadm/result-processing gaiaadm/result-processing:$CIRCLE_BUILD_NUM-$CIRCLE_BRANCH
+    - docker tag gaiaadm/result-processing gaiaadm/result-processing:$CIRCLE_BRANCH
+    - docker tag gaiaadm/result-processing:latest-python gaiaadm/result-processing:$CIRCLE_BUILD_NUM-$CIRCLE_BRANCH-python
+    - docker tag gaiaadm/result-processing:latest-python gaiaadm/result-processing:$CIRCLE_BRANCH-python
 test:
   override:
     - docker run -d --name rabbitmq gaiaadm/rabbitmq; sleep 10
@@ -33,13 +35,12 @@ test:
     - docker cp system-test-runner-python:/src/system-test-results.xml $CIRCLE_TEST_REPORTS/python
     - docker cp system-test-runner-python:/src/system-test-results.txt $CIRCLE_ARTIFACTS/python
 deployment:
-  hub:
+  continuous:
     branch: master
     commands:
       - docker login -e $DOCKER_EMAIL -u $DOCKER_USER -p $DOCKER_PASS
       - docker push gaiaadm/result-processing
       - docker push gaiaadm/result-processing:latest-python
-      - docker push gaiaadm/result-processing:$CIRCLE_BUILD_NUM-python
 general:
   branches:
     only:
