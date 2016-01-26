@@ -15,7 +15,7 @@ dependencies:
     - docker tag gaiaadm/result-processing:latest-python gaiaadm/result-processing:$CIRCLE_BRANCH-python
 test:
   override:
-    - docker run -d --name rabbitmq gaiaadm/rabbitmq; sleep 10
+    - docker run -d --name rabbitmq -e "RABBITMQ_PASS=admin" gaiaadm/rabbitmq; sleep 10
     # run jshint
     - docker run --name jshint-runner gaiaadm/result-processing grunt jshint
     # run unit tests on pure Node.js image
