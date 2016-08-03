@@ -1,11 +1,8 @@
-FROM gaiaadm/nodejs:0.12.6
+FROM gaiaadm/nodejs:4.4.7
 
-ARG https_proxy=""
-ARG http_proxy=""
-
-RUN apt-get update && \
-    apt-get install -y netcat && \
-    apt-get clean
+RUN apk add --no-cache --virtual \
+    racktables \
+  && rm -rf /var/cache/apk/*
 
 # Set the working directory
 WORKDIR /src

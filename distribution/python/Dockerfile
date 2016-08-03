@@ -1,7 +1,4 @@
-FROM gaiaadm/nodejs-python:3.4.0
-
-ARG https_proxy=""
-ARG http_proxy=""
+FROM gaiaadm/nodejs-python:3.5.1
 
 # Set the working directory
 WORKDIR /src
