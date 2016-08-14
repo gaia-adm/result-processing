@@ -38,5 +38,7 @@ process.stdin.on('data', function(str) {
 });
 process.stdin.on('end', function() {
     console.log(']');
-    process.exit(0);
+    setTimeout(function(){ //unless there is a timeout, the process exits before it sends all the data
+        process.exit(0);
+    }, 1000);
 });
